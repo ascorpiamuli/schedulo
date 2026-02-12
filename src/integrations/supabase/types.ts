@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_types: {
+        Row: {
+          buffer_after: number
+          buffer_before: number
+          color: string
+          created_at: string
+          currency: string
+          description: string | null
+          duration: number
+          id: string
+          is_active: boolean
+          location_details: string | null
+          location_type: string
+          price_cents: number | null
+          slug: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buffer_after?: number
+          buffer_before?: number
+          color?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          is_active?: boolean
+          location_details?: string | null
+          location_type?: string
+          price_cents?: number | null
+          slug: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buffer_after?: number
+          buffer_before?: number
+          color?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          is_active?: boolean
+          location_details?: string | null
+          location_type?: string
+          price_cents?: number | null
+          slug?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

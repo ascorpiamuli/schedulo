@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import EventTypes from "./pages/EventTypes";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -33,7 +34,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<DashboardPage><Dashboard /></DashboardPage>} />
-            <Route path="/dashboard/events" element={<DashboardPage><div className="text-muted-foreground">Event Types — coming soon</div></DashboardPage>} />
+            <Route path="/dashboard/events" element={<DashboardPage><EventTypes /></DashboardPage>} />
             <Route path="/dashboard/availability" element={<DashboardPage><div className="text-muted-foreground">Availability — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/bookings" element={<DashboardPage><div className="text-muted-foreground">Bookings — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Team — coming soon</div></DashboardPage>} />
