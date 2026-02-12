@@ -24,28 +24,47 @@ jobs:
       # 3️⃣ Build Docker image
       - name: Build Docker image
         run: |
+          echo "🚀 Building Docker image..."
           docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/schedulo:latest .
+          echo "✅ Docker image built successfully."
 
       # 4️⃣ Push Docker image to Docker Hub
       - name: Push Docker image
         run: |
+          echo "📤 Pushing Docker image to Docker Hub..."
           docker push ${{ secrets.DOCKER_USERNAME }}/schedulo:latest
+          echo "✅ Docker image pushed successfully."
 
       # 5️⃣ Deploy to your server via SSH
       - name: Deploy on Server
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.SERVER_HOST }}
-          
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          timeout: 1m
+          command_timeout: 10m
+          debug: true   # Enables detailed SSH logs
           script: |
+            echo "🔹 Starting deployment on server..."
+            
+            # Show current docker containers for debugging
+            echo "🛠 Current Docker containers:"
+            docker ps -a
+            
             # Pull the latest Docker image
+            echo "📥 Pulling latest Docker image..."
             docker pull ${{ secrets.DOCKER_USERNAME }}/schedulo:latest
             
             # Stop and remove existing container if any exists
-            docker compose -f /home/dockeruser/schedulo/docker-compose.yml down
+            echo "🛑 Stopping and removing existing container..."
+            docker compose -f /home/dockeruser/schedulo/docker-compose.yml down || echo "No existing container to stop."
             
-            # Start container in detached mode plus
+            # Start container in detached mode
+            echo "▶ Starting container..."
             docker compose -f /home/dockeruser/schedulo/docker-compose.yml up -d
-
+            
+            # Show running containers for confirmation
+            echo "✅ Deployment complete. Running containers:"
+            docker ps -a
