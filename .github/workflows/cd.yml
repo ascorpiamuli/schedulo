@@ -45,6 +45,6 @@ jobs:
             # Stop and remove existing container if any
             docker compose -f /home/dockeruser/schedulo/docker-compose.yml down
             
-            # Start container in detached mode
+            # Start container in detached mode plus
             docker compose -f /home/dockeruser/schedulo/docker-compose.yml up -d
 
