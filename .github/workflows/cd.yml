@@ -43,7 +43,8 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/schedulo:latest
             
             # Stop and remove existing container if any
-            docker compose -f /path/to/docker-compose.yml down
+            docker compose -f /home/dockeruser/schedulo/docker-compose.yml down
             
             # Start container in detached mode
-            docker compose -f /path/to/docker-compose.yml up -d
+            docker compose -f /home/dockeruser/schedulo/docker-compose.yml up -d
+
