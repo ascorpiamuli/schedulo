@@ -40,7 +40,7 @@ const App = () => (
             <Route path="/dashboard/events" element={<DashboardPage><EventTypes /></DashboardPage>} />
             <Route path="/dashboard/availability" element={<DashboardPage><Availability /></DashboardPage>} />
             <Route path="/dashboard/bookings" element={<DashboardPage><Bookings /></DashboardPage>} />
-            <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Team — coming soon</div></DashboardPage>} />
+            <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Pasbest Ventures</div></DashboardPage>} />
             <Route path="/dashboard/settings" element={<DashboardPage><div className="text-muted-foreground">Settings — coming soon</div></DashboardPage>} />
             <Route path="/:username" element={<BookingPage />} />
             <Route path="*" element={<NotFound />} />
