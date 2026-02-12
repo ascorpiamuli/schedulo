@@ -8,14 +8,15 @@ WORKDIR /app
 ARG VITE_SUPABASE_PROJECT_ID
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_SUPABASE_URL
-
+ARG VITE_SITE_URL
 # Set them as env vars during build (Vite will pick these up)
 ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
 ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 
 # Optional: Verify args are received (for debugging, remove in production)
-RUN echo "Building with VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}" && \
+RUN echo "Building with VITE_SITE_URL: ${VITE_SITE_URL}" && \
+    echo "VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}" && \
     echo "Project ID: ${VITE_SUPABASE_PROJECT_ID}"
 
 COPY package*.json ./
