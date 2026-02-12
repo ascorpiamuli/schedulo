@@ -13,8 +13,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar as CalIcon, Clock, MapPin, DollarSign, ArrowLeft, ArrowRight, Check, Globe } from "lucide-react";
 import { format, addMinutes, isSameDay, startOfDay, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import PaymentStep from "@/components/booking/PaymentStep";
 
-type Step = "events" | "datetime" | "form" | "confirmed";
+type Step = "events" | "datetime" | "form" | "payment" | "confirmed";
 
 export default function BookingPage() {
   const { username } = useParams<{ username: string }>();
@@ -114,7 +115,7 @@ export default function BookingPage() {
     setStep("form");
   };
 
-  const handleBook = async () => {
+  const handleBook = async (paymentMethod?: string, transactionId?: string) => {
     if (!selectedDate || !selectedTime || !selectedEvent || !guestName || !guestEmail) return;
 
     setSubmitting(true);
@@ -122,6 +123,8 @@ export default function BookingPage() {
     const startTime = new Date(selectedDate);
     startTime.setHours(h, m, 0, 0);
     const endTime = addMinutes(startTime, selectedEvent.duration);
+
+    const isPaid = (selectedEvent.price_cents || 0) > 0;
 
     try {
       const { data, error } = await supabase.from("bookings").insert({
@@ -134,7 +137,7 @@ export default function BookingPage() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         status: "confirmed",
-        payment_status: (selectedEvent.price_cents || 0) > 0 ? "pending" : "none",
+        payment_status: isPaid ? "paid_placeholder" : "none",
         payment_amount_cents: selectedEvent.price_cents || 0,
       }).select().single();
 
@@ -145,6 +148,14 @@ export default function BookingPage() {
       toast({ title: "Booking failed", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleProceedToPaymentOrBook = () => {
+    if ((selectedEvent?.price_cents || 0) > 0) {
+      setStep("payment");
+    } else {
+      handleBook();
     }
   };
 
@@ -355,8 +366,8 @@ export default function BookingPage() {
                     </div>
                   )}
 
-                  <Button onClick={handleBook} className="w-full gap-2" size="lg" disabled={!guestName || !guestEmail || submitting}>
-                    {submitting ? "Booking…" : "Confirm booking"}
+                  <Button onClick={handleProceedToPaymentOrBook} className="w-full gap-2" size="lg" disabled={!guestName || !guestEmail || submitting}>
+                    {submitting ? "Booking…" : (selectedEvent?.price_cents || 0) > 0 ? "Continue to payment" : "Confirm booking"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </CardContent>
@@ -364,7 +375,22 @@ export default function BookingPage() {
             </motion.div>
           )}
 
-          {/* Step 4: Confirmation */}
+          {/* Step 4: Payment */}
+          {step === "payment" && selectedEvent && selectedDate && selectedTime && (
+            <PaymentStep
+              eventTitle={selectedEvent.title}
+              eventColor={selectedEvent.color}
+              amountCents={selectedEvent.price_cents || 0}
+              currency={selectedEvent.currency || "USD"}
+              dateLabel={format(selectedDate, "EEEE, MMMM d, yyyy")}
+              timeLabel={formatTimeDisplay(selectedTime)}
+              duration={selectedEvent.duration}
+              onSuccess={(method, txId) => handleBook(method, txId)}
+              onBack={() => setStep("form")}
+            />
+          )}
+
+          {/* Step 5: Confirmation */}
           {step === "confirmed" && (
             <motion.div
               key="confirmed"
