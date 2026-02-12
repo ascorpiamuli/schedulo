@@ -42,7 +42,7 @@ jobs:
             # Pull the latest Docker image
             docker pull ${{ secrets.DOCKER_USERNAME }}/schedulo:latest
             
-            # Stop and remove existing container if any
+            # Stop and remove existing container if any exists
             docker compose -f /home/dockeruser/schedulo/docker-compose.yml down
             
             # Start container in detached mode plus
