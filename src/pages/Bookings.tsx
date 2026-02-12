@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sendBookingEmail } from "@/lib/emails";
 import { motion } from "framer-motion";
 import { useBookings, useCancelBooking, Booking } from "@/hooks/use-bookings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +90,21 @@ export default function Bookings() {
     try {
       await cancelMutation.mutateAsync(cancelDialog.id);
       toast({ title: "Booking cancelled" });
+
+      // Send cancellation email (fire-and-forget)
+      sendBookingEmail("cancellation", {
+        id: cancelDialog.id,
+        guest_name: cancelDialog.guest_name,
+        guest_email: cancelDialog.guest_email,
+        host_name: "",
+        event_title: cancelDialog.event_types?.title || "Meeting",
+        start_time: cancelDialog.start_time,
+        end_time: cancelDialog.end_time,
+        duration: cancelDialog.event_types?.duration || 30,
+        location_type: cancelDialog.event_types?.location_type || "video",
+        guest_timezone: cancelDialog.guest_timezone,
+      });
+
       setCancelDialog(null);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useProfileByUsername, usePublicEventTypes, usePublicAvailability, usePublicOverrides, useExistingBookings } from "@/hooks/use-booking";
 import { supabase } from "@/integrations/supabase/client";
+import { sendBookingEmail } from "@/lib/emails";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,6 +145,20 @@ export default function BookingPage() {
       if (error) throw error;
       setBookingId(data.id);
       setStep("confirmed");
+
+      // Send confirmation email (fire-and-forget)
+      sendBookingEmail("confirmation", {
+        id: data.id,
+        guest_name: guestName,
+        guest_email: guestEmail,
+        host_name: profile!.full_name || profile!.username || "",
+        event_title: selectedEvent.title,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        duration: selectedEvent.duration,
+        location_type: selectedEvent.location_type,
+        guest_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
     } catch (err: any) {
       toast({ title: "Booking failed", description: err.message, variant: "destructive" });
     } finally {
