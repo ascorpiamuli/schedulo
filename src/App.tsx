@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import EventTypes from "./pages/EventTypes";
+import Availability from "./pages/Availability";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -35,7 +36,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<DashboardPage><Dashboard /></DashboardPage>} />
             <Route path="/dashboard/events" element={<DashboardPage><EventTypes /></DashboardPage>} />
-            <Route path="/dashboard/availability" element={<DashboardPage><div className="text-muted-foreground">Availability — coming soon</div></DashboardPage>} />
+            <Route path="/dashboard/availability" element={<DashboardPage><Availability /></DashboardPage>} />
             <Route path="/dashboard/bookings" element={<DashboardPage><div className="text-muted-foreground">Bookings — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Team — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/settings" element={<DashboardPage><div className="text-muted-foreground">Settings — coming soon</div></DashboardPage>} />
