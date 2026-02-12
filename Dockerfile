@@ -4,6 +4,20 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Add build args for Vite environment variables
+ARG VITE_SUPABASE_PROJECT_ID
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+ARG VITE_SUPABASE_URL
+
+# Set them as env vars during build (Vite will pick these up)
+ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+
+# Optional: Verify args are received (for debugging, remove in production)
+RUN echo "Building with VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}" && \
+    echo "Project ID: ${VITE_SUPABASE_PROJECT_ID}"
+
 COPY package*.json ./
 RUN npm install
 
