@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import EventTypes from "./pages/EventTypes";
 import Availability from "./pages/Availability";
 import DashboardLayout from "./components/DashboardLayout";
+import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/dashboard/bookings" element={<DashboardPage><div className="text-muted-foreground">Bookings — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Team — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/settings" element={<DashboardPage><div className="text-muted-foreground">Settings — coming soon</div></DashboardPage>} />
+            <Route path="/:username" element={<BookingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -74,6 +74,68 @@ export type Database = {
         }
         Relationships: []
       }
+      bookings: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          end_time: string
+          event_type_id: string
+          guest_email: string
+          guest_name: string
+          guest_notes: string | null
+          guest_timezone: string
+          host_user_id: string
+          id: string
+          payment_amount_cents: number | null
+          payment_status: string | null
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          end_time: string
+          event_type_id: string
+          guest_email: string
+          guest_name: string
+          guest_notes?: string | null
+          guest_timezone?: string
+          host_user_id: string
+          id?: string
+          payment_amount_cents?: number | null
+          payment_status?: string | null
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          end_time?: string
+          event_type_id?: string
+          guest_email?: string
+          guest_name?: string
+          guest_notes?: string | null
+          guest_timezone?: string
+          host_user_id?: string
+          id?: string
+          payment_amount_cents?: number | null
+          payment_status?: string | null
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "event_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_types: {
         Row: {
           buffer_after: number
