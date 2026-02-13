@@ -105,7 +105,8 @@ export default function Signup() {
         password,
         options: {
           data: { 
-            full_name: fullName 
+            full_name: fullName,
+            username: email.split("@")[0] || "No username"// Simple username generation from email 
           },
           emailRedirectTo: `${window.location.origin}/login`,
         },

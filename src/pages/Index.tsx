@@ -122,9 +122,110 @@ const testimonials = [
   },
 ];
 
+// Get current date for calendar
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = today.getMonth();
+const currentDate = today.getDate();
+
+// Kenyan national holidays for 2025
+const nationalHolidays = [
+  {
+    title: 'New Year\'s Day',
+    start: '2025-01-01',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Good Friday',
+    start: '2025-04-18',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Easter Monday',
+    start: '2025-04-21',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Labour Day',
+    start: '2025-05-01',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Madaraka Day',
+    start: '2025-06-01',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Mashujaa Day',
+    start: '2025-10-20',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Jamhuri Day',
+    start: '2025-12-12',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Christmas Day',
+    start: '2025-12-25',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  },
+  {
+    title: 'Boxing Day',
+    start: '2025-12-26',
+    allDay: true,
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    textColor: '#FFFFFF',
+    display: 'background',
+    classNames: ['holiday-event']
+  }
+];
+
+// Sample events with paid/free indicators
 const calendarEvents = [
   {
-    title: 'Strategy Call',
+    title: '💰 Strategy Call',
     start: '2025-01-20T10:00:00',
     end: '2025-01-20T10:30:00',
     backgroundColor: '#8B5CF6',
@@ -136,7 +237,7 @@ const calendarEvents = [
     }
   },
   {
-    title: 'Product Demo',
+    title: '🎥 Product Demo',
     start: '2025-01-20T14:00:00',
     end: '2025-01-20T14:45:00',
     backgroundColor: '#10B981',
@@ -148,7 +249,7 @@ const calendarEvents = [
     }
   },
   {
-    title: 'Consultation',
+    title: '💰 Consultation',
     start: '2025-01-21T09:30:00',
     end: '2025-01-21T10:30:00',
     backgroundColor: '#8B5CF6',
@@ -158,7 +259,32 @@ const calendarEvents = [
       amount: '$150',
       client: 'Dr. Mwangi'
     }
-  }
+  },
+  {
+    title: '🎥 Team Meeting',
+    start: '2025-01-22T11:00:00',
+    end: '2025-01-22T12:00:00',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+    extendedProps: {
+      type: 'free',
+      amount: 'Free',
+      client: 'Internal'
+    }
+  },
+  {
+    title: '💰 Client Workshop',
+    start: '2025-01-23T13:00:00',
+    end: '2025-01-23T15:00:00',
+    backgroundColor: '#8B5CF6',
+    borderColor: '#8B5CF6',
+    extendedProps: {
+      type: 'paid',
+      amount: '$300',
+      client: 'ABC Corp'
+    }
+  },
+  ...nationalHolidays
 ];
 
 const pricingPlans = [
@@ -256,6 +382,7 @@ export default function Index() {
     message: ''
   });
   const [formStatus, setFormStatus] = useState('idle');
+  const [calendarApi, setCalendarApi] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -264,6 +391,16 @@ export default function Index() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Function to handle calendar initialization
+  const handleCalendarInit = (calendar) => {
+    setCalendarApi(calendar);
+    
+    // Navigate to current month and date
+    if (calendar) {
+      calendar.gotoDate(today);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -280,6 +417,14 @@ export default function Index() {
       setTimeout(() => setFormStatus('idle'), 3000);
     }, 1500);
   };
+
+  // Format current date for display
+  const formattedDate = today.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
@@ -399,7 +544,7 @@ export default function Index() {
       </motion.header>
 
       {/* Hero with Mini Calendar Preview */}
-      <section className="relative pt-24 lg:pt-28 overflow-hidden">
+      <section className="relative pt-24 lg:pt-28 mb-12 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent" />
         
@@ -431,22 +576,6 @@ export default function Index() {
                 Eliminate the back-and-forth. Share your link, accept payments, 
                 and fill your calendar automatically.
               </p>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-white h-12 px-6 shadow-lg shadow-primary/20 group">
-                  <Link to="/signup">
-                    Start for free
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild className="border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 h-12 px-6">
-                  <Link to="/demo">
-                    <Video className="mr-2 h-4 w-4" />
-                    Watch demo
-                  </Link>
-                </Button>
-              </div>
 
               {/* Social Proof */}
               <div className="flex items-center gap-6">
@@ -488,7 +617,7 @@ export default function Index() {
               {/* Premium Calendar Card */}
               <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-800/50 overflow-hidden backdrop-blur-sm">
                 
-                {/* Calendar Header */}
+                {/* Calendar Header with Today's Date */}
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -503,7 +632,9 @@ export default function Index() {
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <Calendar className="h-3.5 w-3.5 text-primary" />
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Jan 20 - 26</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                        {today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -568,6 +699,7 @@ export default function Index() {
                         color: #E5E7EB;
                       }
 
+                      /* Today's date styling - highlighted */
                       .custom-calendar-mini .fc .fc-day-today .fc-daygrid-day-number {
                         background: #8B5CF6;
                         color: white;
@@ -577,6 +709,16 @@ export default function Index() {
                         display: flex;
                         align-items: center;
                         justify-content: center;
+                        font-weight: 600;
+                      }
+
+                      .custom-calendar-mini .fc .fc-day-today {
+                        background: transparent !important;
+                      }
+
+                      /* Holiday event styling */
+                      .custom-calendar-mini .holiday-event {
+                        opacity: 0.2;
                       }
 
                       .custom-calendar-mini .fc .fc-event {
@@ -585,6 +727,17 @@ export default function Index() {
                         font-size: 0.7rem;
                         border: none;
                         margin-bottom: 1px;
+                        cursor: pointer;
+                      }
+
+                      /* Paid events styling */
+                      .custom-calendar-mini .fc-event[title*="💰"] {
+                        font-weight: 500;
+                      }
+
+                      /* Free events styling */
+                      .custom-calendar-mini .fc-event[title*="🎥"] {
+                        font-weight: 500;
                       }
 
                       .custom-calendar-mini .fc .fc-col-header-cell-cushion {
@@ -593,11 +746,18 @@ export default function Index() {
                         color: #6B7280;
                         padding: 0.25rem 0;
                       }
+
+                      /* Tooltip styling */
+                      .fc-event:hover {
+                        transform: scale(1.02);
+                        z-index: 10;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                      }
                     `}</style>
                     <FullCalendar
                       plugins={[dayGridPlugin, interactionPlugin]}
                       initialView="dayGridMonth"
-                      initialDate="2025-01-20"
+                      initialDate={today}
                       headerToolbar={{
                         left: 'prev,next',
                         center: 'title',
@@ -608,17 +768,43 @@ export default function Index() {
                       dayMaxEvents={2}
                       weekends={true}
                       eventDisplay="block"
+                      eventContent={(eventInfo) => {
+                        // Custom event rendering
+                        const isHoliday = eventInfo.event.title.includes('Day') || 
+                                         eventInfo.event.title.includes('Christmas') ||
+                                         eventInfo.event.title.includes('New Year') ||
+                                         eventInfo.event.title.includes('Good Friday') ||
+                                         eventInfo.event.title.includes('Easter') ||
+                                         eventInfo.event.title.includes('Labour') ||
+                                         eventInfo.event.title.includes('Madaraka') ||
+                                         eventInfo.event.title.includes('Mashujaa') ||
+                                         eventInfo.event.title.includes('Jamhuri');
+                        
+                        if (isHoliday) {
+                          return (
+                            <div className="text-[0.65rem] truncate text-red-600 dark:text-red-400 font-medium">
+                              🎉 {eventInfo.event.title}
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div className="text-[0.65rem] truncate text-white">
+                            {eventInfo.event.title}
+                          </div>
+                        );
+                      }}
                     />
                   </div>
                 </div>
 
-                {/* Upcoming Events */}
+                {/* Upcoming Events with Legend */}
                 <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Clock3 className="h-3.5 w-3.5 text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-400">Next available:</span>
-                      <span className="font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-2 py-1 rounded-md shadow-sm">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Next available:</span>
+                      <span className="text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-2 py-1 rounded-md shadow-sm">
                         Today, 2:00 PM
                       </span>
                     </div>
@@ -626,6 +812,26 @@ export default function Index() {
                       View all
                       <ChevronRight className="ml-1 h-3 w-3" />
                     </Button>
+                  </div>
+                  
+                  {/* Calendar Legend */}
+                  <div className="flex items-center gap-3 text-[0.65rem]">
+                    <div className="flex items-center gap-1">
+                      <div className="h-2 w-2 rounded-full bg-[#8B5CF6]" />
+                      <span className="text-gray-500 dark:text-gray-400">Paid</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-2 w-2 rounded-full bg-[#10B981]" />
+                      <span className="text-gray-500 dark:text-gray-400">Free</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-2 w-2 rounded-full bg-red-400" />
+                      <span className="text-gray-500 dark:text-gray-400">Holiday</span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-auto">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      <span className="text-gray-500 dark:text-gray-400">Today</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1401,45 +1607,43 @@ export default function Index() {
           {/* Parent Company Banner */}
           <div className="mb-8 p-6 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 rounded-2xl border border-primary/20">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
                 <Building2 className="h-8 w-8 text-primary" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">A product of</p>
-                  <a 
-                    href="https://pasbestventures.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-lg font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent hover:from-primary/80 hover:to-primary/50 transition-all"
-                  >
-                    Pasbest Ventures Limited
-                  </a>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">A product of</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">Pasbest Ventures Limited</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Innovating for a connected Africa</span>
-                <ArrowRight className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-6">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Nairobi, Kenya</span>
+                <a 
+                  href="https://pasbestventures.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                >
+                  Visit parent company
+                  <ArrowRight className="h-3 w-3" />
+                </a>
               </div>
             </div>
           </div>
 
           {/* Bottom Footer */}
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-gray-500 dark:text-gray-500">
-              © 2026 Pasbest Talks by Pasbest Ventures Limited. All rights reserved.
+          <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-200 dark:border-gray-800">
+            <p className="text-xs text-gray-500 dark:text-gray-500 mb-4 md:mb-0">
+              © {new Date().getFullYear()} Pasbest Ventures Limited. All rights reserved. 
+              Pasbest Talks is a trademark of Pasbest Ventures.
             </p>
-            <div className="flex gap-6">
-              <a href="https://pasbestventures.com/status" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 dark:text-gray-500 hover:text-primary transition-colors">
-                System Status
-              </a>
-              <a href="https://pasbestventures.com/api" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 dark:text-gray-500 hover:text-primary transition-colors">
-                API
-              </a>
-              <a href="https://pasbestventures.com/privacy" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 dark:text-gray-500 hover:text-primary transition-colors">
-                Privacy
-              </a>
-              <a href="https://pasbestventures.com/terms" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 dark:text-gray-500 hover:text-primary transition-colors">
-                Terms
-              </a>
+            <div className="flex items-center gap-6">
+              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                GDPR Compliant
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <Globe className="h-3 w-3" />
+                Nairobi, Kenya
+              </span>
             </div>
           </div>
         </div>

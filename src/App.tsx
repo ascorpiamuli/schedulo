@@ -15,7 +15,14 @@ import DashboardLayout from "./components/DashboardLayout";
 import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 function DashboardPage({ children }: { children: React.ReactNode }) {
   return (
@@ -30,19 +37,33 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AuthProvider>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            
+            {/* Dashboard routes - protected */}
             <Route path="/dashboard" element={<DashboardPage><Dashboard /></DashboardPage>} />
             <Route path="/dashboard/events" element={<DashboardPage><EventTypes /></DashboardPage>} />
             <Route path="/dashboard/availability" element={<DashboardPage><Availability /></DashboardPage>} />
             <Route path="/dashboard/bookings" element={<DashboardPage><Bookings /></DashboardPage>} />
             <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Team — coming soon</div></DashboardPage>} />
             <Route path="/dashboard/settings" element={<DashboardPage><div className="text-muted-foreground">Settings — coming soon</div></DashboardPage>} />
-            <Route path="/:username" element={<BookingPage />} />
+            
+            {/* Public booking pages - MUST come after dashboard routes */}
+             <Route path="/:username" element={<BookingPage />} />            {/* ← THEN THIS */}
+            <Route path="/:username/:eventSlug" element={<BookingPage />} /> {/* ← ADD THIS FIRST */}
+      
+            
+            {/* 404 - catch all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

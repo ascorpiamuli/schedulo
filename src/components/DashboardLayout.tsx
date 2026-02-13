@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  BookImageIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -48,14 +49,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         )}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
-          <Calendar className="h-7 w-7 text-sidebar-primary" />
-          <span className="text-xl font-bold font-['Space_Grotesk']">Schedulo</span>
-          <button className="ml-auto lg:hidden" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
-          </button>
+        {/* Logo */}
+        <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="relative flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-primary" />
+              <div className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse ring-2 ring-sidebar" />
+            </div>
+            <span className="font-['Space_Grotesk'] font-bold text-base md:text-lg tracking-tight">
+              <span className="bg-gradient-to-r from-sidebar-foreground to-sidebar-foreground/80 bg-clip-text text-transparent">
+                Pasbest
+              </span>
+              <span className="text-primary">Talks</span>
+            </span>
+          </Link>
         </div>
-
         {/* Nav */}
         <nav className="flex-1 space-y-1 p-4">
           {navItems.map((item) => {

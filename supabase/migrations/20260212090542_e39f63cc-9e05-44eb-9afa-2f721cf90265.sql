@@ -6,7 +6,7 @@ CREATE TABLE public.profiles (
   full_name TEXT,
   username TEXT UNIQUE,
   avatar_url TEXT,
-  timezone TEXT NOT NULL DEFAULT 'America/New_York',
+  timezone TEXT NOT NULL DEFAULT 'Africa/Nairobi',
   bio TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -65,3 +65,4 @@ CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
+
