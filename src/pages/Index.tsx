@@ -45,7 +45,8 @@ import {
   X,
   Send,
   MessageSquare,
-  Building2
+  Building2,
+  Construction
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -1115,9 +1116,63 @@ export default function Index() {
           </div>
         </div>
       </section>
+      {/* Pricing - Coming Soon */}
+      <section id="pricing" className="py-20 lg:py-24 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center max-w-3xl mx-auto"
+          >
+            <div className="inline-flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full mb-4">
+              <Construction className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Coming Soon</span>
+            </div>
+            
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Pricing launching soon
+            </h2>
+            
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+              We're crafting the perfect pricing plans for you. Join the waitlist to be the first to know when we launch.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-white h-12 px-8 shadow-lg group">
+                <Mail className="mr-2 h-4 w-4" />
+                Join waitlist
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              
+              <Button size="lg" variant="outline" asChild className="border-2 border-gray-300 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 h-12 px-8">
+                <Link to="/contact">
+                  <Headphones className="mr-2 h-4 w-4" />
+                  Contact sales
+                </Link>
+              </Button>
+            </div>
+            
+            {/* Money-back guarantee placeholder */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mt-12"
+            >
+              <div className="inline-flex items-center gap-3 bg-white dark:bg-gray-900 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800">
+                <Shield className="h-5 w-5 text-primary" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Free during beta. No credit card required.
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Pricing - FULL VERSION RESTORED */}
-      <section id="pricing" className="py-20 lg:py-24 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-950">
+     {/* <section id="pricing" className="py-20 lg:py-24 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1213,7 +1268,7 @@ export default function Index() {
             ))}
           </div>
 
-          {/* Money-back guarantee */}
+          
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1228,8 +1283,7 @@ export default function Index() {
             </div>
           </motion.div>
         </div>
-      </section>
-
+      </section> */}
       {/* Integrations Grid */}
       <section className="py-20 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1365,7 +1419,7 @@ export default function Index() {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="John Doe"
+                    placeholder="Benedict Pascal"
                   />
                 </div>
 
@@ -1381,7 +1435,7 @@ export default function Index() {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="john@example.com"
+                    placeholder="xyz@company.com"
                   />
                 </div>
 
@@ -1487,8 +1541,8 @@ export default function Index() {
                     <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</p>
-                      <a href="tel:+254700000000" className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
-                        +254 700 000 000
+                      <a href="tel:+254727200002" className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
+                        +254 727 200002
                       </a>
                     </div>
                   </div>

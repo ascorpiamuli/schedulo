@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, RequireAuth } from "@/lib/auth";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth, RequireAuth } from "@/lib/auth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -14,6 +14,7 @@ import Bookings from "./pages/Bookings";
 import DashboardLayout from "./components/DashboardLayout";
 import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,52 +25,129 @@ const queryClient = new QueryClient({
   },
 });
 
-function DashboardPage({ children }: { children: React.ReactNode }) {
+// Loading component
+function LoadingSpinner() {
   return (
-    <RequireAuth>
-      <DashboardLayout>{children}</DashboardLayout>
-    </RequireAuth>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    </div>
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            
-            {/* Dashboard routes - protected */}
-            <Route path="/dashboard" element={<DashboardPage><Dashboard /></DashboardPage>} />
-            <Route path="/dashboard/events" element={<DashboardPage><EventTypes /></DashboardPage>} />
-            <Route path="/dashboard/availability" element={<DashboardPage><Availability /></DashboardPage>} />
-            <Route path="/dashboard/bookings" element={<DashboardPage><Bookings /></DashboardPage>} />
-            <Route path="/dashboard/team" element={<DashboardPage><div className="text-muted-foreground">Team — coming soon</div></DashboardPage>} />
-            <Route path="/dashboard/settings" element={<DashboardPage><div className="text-muted-foreground">Settings — coming soon</div></DashboardPage>} />
-            
-            {/* Public booking pages - MUST come after dashboard routes */}
-             <Route path="/:username" element={<BookingPage />} />            {/* ← THEN THIS */}
-            <Route path="/:username/:eventSlug" element={<BookingPage />} /> {/* ← ADD THIS FIRST */}
-      
-            
-            {/* 404 - catch all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Protected route wrapper
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!session) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <DashboardLayout>{children}</DashboardLayout>;
+}
+
+// Public route wrapper (redirects to dashboard if already logged in)
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (session) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <AuthProvider>
+            <Routes>
+              {/* Public routes - accessible only when NOT logged in */}
+              <Route path="/" element={
+                <PublicRoute>
+                  <Index />
+                </PublicRoute>
+              } />
+              <Route path="/login" element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } />
+              <Route path="/signup" element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              } />
+              
+              {/* Public booking pages - accessible to everyone (no auth check) */}
+              <Route path="/:username" element={<BookingPage />} />
+              <Route path="/:username/:eventSlug" element={<BookingPage />} />
+              
+              {/* Dashboard routes - protected, require authentication */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/events" element={
+                <ProtectedRoute>
+                  <EventTypes />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/availability" element={
+                <ProtectedRoute>
+                  <Availability />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/bookings" element={
+                <ProtectedRoute>
+                  <Bookings />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/team" element={
+                <ProtectedRoute>
+                  <div className="p-8 text-center">
+                    <h2 className="text-2xl font-bold mb-2">Team Management</h2>
+                    <p className="text-muted-foreground">Coming soon...</p>
+                  </div>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/settings" element={
+                <ProtectedRoute>
+                  <div className="p-8 text-center">
+                    <h2 className="text-2xl font-bold mb-2">Settings</h2>
+                    <p className="text-muted-foreground">Coming soon...</p>
+                  </div>
+                </ProtectedRoute>
+              } />
+              
+              {/* 404 - catch all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

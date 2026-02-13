@@ -40,6 +40,107 @@ export function useEventTypes() {
   });
 }
 
+/**
+ * Hook to get a single event type by slug for a specific user
+ * @param userId - The user ID of the event owner
+ * @param slug - The slug of the event
+ * @returns Query result with the event type
+ */
+export function useEventTypeBySlug(userId: string | undefined, slug: string | undefined) {
+  return useQuery({
+    queryKey: ["event_type", userId, slug],
+    queryFn: async () => {
+      if (!userId || !slug) throw new Error("User ID and slug are required");
+
+      const { data, error } = await supabase
+        .from("event_types")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new Error("Event not found");
+        }
+        throw error;
+      }
+
+      return data as EventType;
+    },
+    enabled: !!userId && !!slug,
+    retry: false,
+  });
+}
+
+/**
+ * Hook to get a single event type by ID
+ * @param id - The event type ID
+ * @returns Query result with the event type
+ */
+export function useEventType(id: string | undefined) {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ["event_type", id],
+    queryFn: async () => {
+      if (!id) throw new Error("Event ID is required");
+
+      const { data, error } = await supabase
+        .from("event_types")
+        .select("*")
+        .eq("id", id)
+        .eq("user_id", user!.id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new Error("Event not found");
+        }
+        throw error;
+      }
+
+      return data as EventType;
+    },
+    enabled: !!id && !!user,
+  });
+}
+
+/**
+ * Hook to get a public event type by slug (no authentication required)
+ * @param userId - The user ID of the event owner
+ * @param slug - The slug of the event
+ * @returns Query result with the event type
+ */
+export function usePublicEventTypeBySlug(userId: string | undefined, slug: string | undefined) {
+  return useQuery({
+    queryKey: ["public_event_type", userId, slug],
+    queryFn: async () => {
+      if (!userId || !slug) throw new Error("User ID and slug are required");
+
+      const { data, error } = await supabase
+        .from("event_types")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new Error("Event not found");
+        }
+        throw error;
+      }
+
+      return data as EventType;
+    },
+    enabled: !!userId && !!slug,
+    retry: false,
+  });
+}
+
 export function useCreateEventType() {
   const qc = useQueryClient();
   return useMutation({
