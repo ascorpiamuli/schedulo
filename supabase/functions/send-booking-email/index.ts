@@ -689,12 +689,12 @@ function buildHostNotificationEmail(booking: EmailPayload["booking"], hostName: 
 }
 // Create reusable transporter with better error handling
 const transporter = nodemailer.createTransport({
-  host: "mail.pasbestventures.com",
+  host: "",
   port: 465,
   secure: true,
   auth: {
-    user: "noreply@pasbestventures.com",
-    pass: "Pasbest@2025",
+    user: "",
+    pass: "",
   },
   tls: {
     rejectUnauthorized: false,
