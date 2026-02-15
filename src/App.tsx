@@ -71,7 +71,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
+         <Toaster/>
         <Sonner />
         <BrowserRouter
           future={{

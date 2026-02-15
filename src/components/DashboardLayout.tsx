@@ -118,7 +118,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
           <div className="flex items-center gap-2">
             <Calendar className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold font-['Space_Grotesk']">Schedulo</span>
+            <span className="text-lg font-bold font-['Space_Grotesk']">PasbestTalks</span>
           </div>
         </header>
 

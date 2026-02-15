@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicEventTypeBySlug } from "@/hooks/use-event-types";
@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -20,7 +21,7 @@ import {
   User, Mail, FileText, Video, Phone, Building2,
   Loader2, CheckCircle2, XCircle, CalendarOff,
   Sparkles, Users, ChevronLeft, Award, Shield,
-  Zap, Globe, Coffee, Sun, Moon
+  Zap, Globe, Coffee, Sun, Moon, Copy, ExternalLink, Settings, ChevronDown, ChevronUp
 } from "lucide-react";
 import { format, addMinutes, startOfDay, addDays, isSameDay, isToday, isTomorrow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -97,6 +98,19 @@ function FeatureCard({ icon: Icon, title, description }: { icon: any; title: str
   );
 }
 
+// Google Calendar link generator for guest's personal calendar
+function generateGoogleCalendarLink(event: any, startTime: Date, endTime: Date, guestName: string, hostName: string, meetLink?: string, guestEmail?: string) {
+  const baseUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+  const text = encodeURIComponent(event.title);
+  const details = encodeURIComponent(
+    `Meeting with ${hostName}\n\n${event.description || ''}\n\n${meetLink ? `Join via Google Meet: ${meetLink}` : ''}\n\nGuest: ${guestName}\nGuest Email: ${guestEmail || 'Not provided'}`
+  );
+  const location = encodeURIComponent(meetLink || event.location_details || '');
+  const dates = `${startTime.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}/${endTime.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`;
+  
+  return `${baseUrl}&text=${text}&details=${details}&location=${location}&dates=${dates}`;
+}
+
 export default function BookingPage() {
   const { username, eventSlug } = useParams<{ username: string; eventSlug: string }>();
   
@@ -115,6 +129,9 @@ export default function BookingPage() {
   const [guestNotes, setGuestNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [month, setMonth] = useState<Date>(new Date());
+  const [bookingData, setBookingData] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
+  const [syncToCalendar, setSyncToCalendar] = useState(true); // Toggle for guest's calendar sync
 
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
   const { data: existingBookings } = useExistingBookings(username, dateStr);
@@ -198,8 +215,44 @@ export default function BookingPage() {
     return availableDates.some(d => isSameDay(d, date));
   };
 
+  const handleCopyLink = () => {
+    if (bookingData?.meeting_link) {
+      navigator.clipboard.writeText(bookingData.meeting_link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({
+        title: "Link copied!",
+        description: "Meeting link copied to clipboard",
+      });
+    }
+  };
+
   const handleBook = async () => {
-    if (!selectedDate || !selectedTime || !event || !guestName || !guestEmail || !profile) return;
+    if (!selectedDate || !selectedTime || !event || !guestName || !guestEmail || !profile) {
+      console.error('❌ Missing required booking data:', {
+        hasDate: !!selectedDate,
+        hasTime: !!selectedTime,
+        hasEvent: !!event,
+        hasGuestName: !!guestName,
+        hasGuestEmail: !!guestEmail,
+        hasProfile: !!profile
+      });
+      return;
+    }
+
+    console.log('🚀 ================================================');
+    console.log('🚀 BOOKING PROCESS STARTED');
+    console.log('🚀 ================================================');
+    console.log('📋 Booking details:', {
+      eventId: event.id,
+      eventTitle: event.title,
+      hostUserId: username,
+      guestName,
+      guestEmail,
+      locationType: event.location_type,
+      duration: event.duration,
+      syncToCalendar // Log the guest's preference
+    });
 
     setSubmitting(true);
     const [h, m] = selectedTime.split(":").map(Number);
@@ -207,8 +260,18 @@ export default function BookingPage() {
     startTime.setHours(h, m, 0, 0);
     const endTime = addMinutes(startTime, event.duration);
 
+    console.log('📅 Selected time:', {
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+
     try {
-      const { data, error } = await supabase
+      // Step 1: Insert the booking first to get an ID
+      console.log('📝 Step 1: Creating booking record...');
+      const insertStartTime = Date.now();
+      
+      const { data: booking, error: bookingError } = await supabase
         .from("bookings")
         .insert({
           event_type_id: event.id,
@@ -222,19 +285,161 @@ export default function BookingPage() {
           status: "confirmed",
           payment_status: (event.price_cents || 0) > 0 ? "pending" : "none",
           payment_amount_cents: event.price_cents || 0,
+          meeting_link: null,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      const insertDuration = Date.now() - insertStartTime;
+      console.log(`⏱️ Booking creation completed in ${insertDuration}ms`);
 
-      // Send confirmation email
+      if (bookingError) {
+        console.error('❌ Booking creation failed:', {
+          code: bookingError.code,
+          message: bookingError.message,
+          details: bookingError.details
+        });
+        throw bookingError;
+      }
+
+      console.log('✅ Booking created successfully:', {
+        bookingId: booking.id,
+        status: booking.status,
+        created: booking.created_at
+      });
+
+      // Step 2: Create calendar event (only if guest wants to sync)
+      let meetingLink = null;
+      let calendarEventId = null;
+      let calendarHtmlLink = null;
+
+      if (syncToCalendar) {
+        console.log('📅 Step 2: Creating calendar event (guest opted in)...');
+        
+        try {
+          const functionStartTime = Date.now();
+          
+          const { data: calendarData, error: calendarError } = await supabase.functions.invoke(
+            'create-calendar-event',
+            {
+              body: {
+                bookingId: booking.id,
+                hostUserId: username,
+                eventDetails: {
+                  title: event.title,
+                  description: event.description || '',
+                  startTime: startTime.toISOString(),
+                  endTime: endTime.toISOString(),
+                  guestName: guestName,
+                  guestEmail: guestEmail,
+                  locationType: event.location_type,
+                  locationDetails: event.location_details,
+                }
+              }
+            }
+          );
+
+          const functionDuration = Date.now() - functionStartTime;
+          console.log(`⏱️ Edge function call completed in ${functionDuration}ms`);
+
+          if (calendarError) {
+            console.error('❌ Edge function returned error:', calendarError);
+            throw calendarError;
+          }
+
+          console.log('✅ Edge function response:', {
+            success: calendarData?.success,
+            hasMeetLink: !!calendarData?.meetLink,
+            hasCalendarEventId: !!calendarData?.calendarEventId,
+            message: calendarData?.message
+          });
+
+          if (calendarData) {
+            meetingLink = calendarData.meetLink;
+            calendarEventId = calendarData.calendarEventId;
+            calendarHtmlLink = calendarData.calendarHtmlLink;
+
+            // Step 3: Update booking with calendar data
+            if (meetingLink || calendarEventId) {
+              console.log('📝 Step 3: Updating booking with calendar data...');
+              const updateStartTime = Date.now();
+              
+              const updateData: any = {
+                updated_at: new Date().toISOString()
+              };
+              if (meetingLink) updateData.meeting_link = meetingLink;
+              if (calendarEventId) updateData.calendar_event_id = calendarEventId;
+              if (calendarHtmlLink) updateData.calendar_html_link = calendarHtmlLink;
+
+              const { error: updateError } = await supabase
+                .from("bookings")
+                .update(updateData)
+                .eq('id', booking.id);
+
+              const updateDuration = Date.now() - updateStartTime;
+              console.log(`⏱️ Booking update completed in ${updateDuration}ms`);
+
+              if (updateError) {
+                console.error('❌ Failed to update booking with calendar data:', updateError);
+              } else {
+                console.log('✅ Booking updated with calendar data');
+              }
+            }
+          }
+
+        } catch (calendarErr: any) {
+          console.error('❌ Calendar event creation failed:', {
+            error: calendarErr,
+            message: calendarErr.message,
+            stack: calendarErr.stack
+          });
+          
+          toast({
+            title: "Calendar event creation failed",
+            description: "Your booking is confirmed but we couldn't create the calendar event. You'll receive an email confirmation instead.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log('📅 Step 2: Guest opted out of calendar sync, skipping calendar event creation');
+      }
+
+      // Step 4: Fetch the updated booking
+      console.log('📝 Step 4: Fetching updated booking data...');
+      const fetchStartTime = Date.now();
+      
+      const { data: updatedBooking, error: fetchError } = await supabase
+        .from("bookings")
+        .select()
+        .eq('id', booking.id)
+        .single();
+
+      const fetchDuration = Date.now() - fetchStartTime;
+      console.log(`⏱️ Booking fetch completed in ${fetchDuration}ms`);
+
+      if (fetchError) {
+        console.error('❌ Failed to fetch updated booking:', fetchError);
+        throw fetchError;
+      }
+
+      setBookingData(updatedBooking);
+      console.log('✅ Updated booking data:', {
+        id: updatedBooking.id,
+        hasMeetingLink: !!updatedBooking.meeting_link,
+        hasCalendarEventId: !!updatedBooking.calendar_event_id,
+        meetingLink: updatedBooking.meeting_link
+      });
+
+      // Step 5: Send confirmation email
+      console.log('📧 Step 5: Sending confirmation email...');
       try {
+        const emailStartTime = Date.now();
+        
         await supabase.functions.invoke('send-booking-email', {
           body: {
             type: "confirmation",
             booking: {
-              id: data.id,
+              id: updatedBooking.id,
               guest_name: guestName,
               guest_email: guestEmail,
               host_user_id: username,
@@ -244,23 +449,66 @@ export default function BookingPage() {
               end_time: endTime.toISOString(),
               duration: event.duration,
               location_type: event.location_type,
+              location_details: meetingLink || event.location_details,
               guest_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              meet_link: meetingLink,
+              calendar_event_id: calendarEventId,
             }
           }
         });
+
+        const emailDuration = Date.now() - emailStartTime;
+        console.log(`⏱️ Email function completed in ${emailDuration}ms`);
+        console.log('✅ Confirmation email sent');
+
       } catch (emailError) {
-        console.error("Failed to send email:", emailError);
+        console.error('❌ Failed to send email:', emailError);
+        // Non-critical, continue
       }
 
       setStep("confirmed");
+      
+      console.log('🎉 ================================================');
+      console.log('🎉 BOOKING PROCESS COMPLETED SUCCESSFULLY');
+      console.log('🎉 ================================================');
+      console.log('📊 Final summary:', {
+        bookingId: updatedBooking.id,
+        eventTitle: event.title,
+        guestName,
+        guestEmail,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        locationType: event.location_type,
+        hasMeetingLink: !!meetingLink,
+        hasCalendarEvent: !!calendarEventId,
+        syncedToCalendar: syncToCalendar
+      });
+
+      toast({
+        title: "Booking confirmed!",
+        description: event.location_type === 'video' 
+          ? "Calendar invite and meeting link have been sent to your email."
+          : "Calendar invite has been sent to your email.",
+      });
+
     } catch (err: any) {
+      console.error('❌ ================================================');
+      console.error('❌ BOOKING PROCESS FAILED');
+      console.error('❌ ================================================');
+      console.error('❌ Error name:', err.name);
+      console.error('❌ Error message:', err.message);
+      console.error('❌ Error code:', err.code);
+      console.error('❌ Error details:', err.details);
+      console.error('❌ Error stack:', err.stack);
+      
       toast({ 
         title: "Booking failed", 
-        description: err.message || "Something went wrong", 
+        description: err.message || "Something went wrong. Please try again.", 
         variant: "destructive" 
       });
     } finally {
       setSubmitting(false);
+      console.log('🏁 Booking process finished, submitting state reset');
     }
   };
 
@@ -309,7 +557,7 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header with powered by */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-primary to-primary/80 p-1.5 sm:p-2 rounded-lg shadow-lg">
@@ -407,7 +655,8 @@ export default function BookingPage() {
                         )}
                       </div>
 
-                      {event.location_details && (
+                      {/* Location Details from Event */}
+                      {event.location_details && event.location_type !== 'video' && (
                         <div className="bg-primary/5 rounded-lg p-3 sm:p-4 border border-primary/10">
                           <p className="text-[10px] sm:text-xs text-primary font-medium mb-1 sm:mb-2">📍 Location Details</p>
                           <p className="text-xs sm:text-sm text-muted-foreground break-words">{event.location_details}</p>
@@ -425,6 +674,18 @@ export default function BookingPage() {
                           icon={Zap}
                           title="Instant Confirmation"
                           description="Get confirmation immediately"
+                        />
+                        {event.location_type === 'video' && (
+                          <FeatureCard
+                            icon={Video}
+                            title="Google Meet Ready"
+                            description="Automatic video link generation"
+                          />
+                        )}
+                        <FeatureCard
+                          icon={CalendarIcon}
+                          title="Calendar Integration"
+                          description="Event saved to your calendar"
                         />
                       </div>
                     </div>
@@ -637,6 +898,44 @@ export default function BookingPage() {
                         <p className="font-semibold text-sm sm:text-lg">{event.duration} min</p>
                       </div>
                     </div>
+                    
+                    {/* Simple toggle for calendar sync */}
+                    <div className="mt-4 pt-4 border-t border-primary/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">Add to my calendar</span>
+                        </div>
+                        <Switch
+                          checked={syncToCalendar}
+                          onCheckedChange={setSyncToCalendar}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {syncToCalendar 
+                          ? "Event will be saved to your calendar automatically" 
+                          : "You'll receive an email confirmation instead"}
+                      </p>
+                    </div>
+
+                    {event.location_type === 'video' && (
+                      <div className="mt-3 pt-3 border-t border-primary/10">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-primary">
+                          <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span>Google Meet link will be generated automatically</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {event.location_type !== 'video' && event.location_details && (
+                      <div className="mt-3 pt-3 border-t border-primary/10">
+                        <div className="flex items-start gap-2 text-xs sm:text-sm">
+                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0 mt-0.5" />
+                          <span className="text-muted-foreground">{event.location_details}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Form fields */}
@@ -696,7 +995,7 @@ export default function BookingPage() {
                     {submitting ? (
                       <>
                         <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                        Booking your meeting...
+                        Confirming booking...
                       </>
                     ) : (
                       <>
@@ -764,7 +1063,86 @@ export default function BookingPage() {
                         <span className="text-xs sm:text-sm">{profile.full_name || 'Host'}</span>
                       </div>
                     </div>
+
+                    {/* Location Details from Event */}
+                    {event.location_type !== 'video' && event.location_details && (
+                      <div className="mt-3 pt-3 border-t border-primary/10">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">📍 Location</p>
+                        <p className="text-xs sm:text-sm bg-white dark:bg-slate-800 rounded-lg p-3 border">
+                          {event.location_details}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Google Meet Link (if video call) */}
+                    {event.location_type === 'video' && bookingData?.meeting_link && (
+                      <div className="mt-3 pt-3 border-t border-primary/10">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">Google Meet Link</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-3 border text-xs sm:text-sm font-mono truncate">
+                            {bookingData.meeting_link}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0 gap-1"
+                            onClick={handleCopyLink}
+                          >
+                            <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
+                            {copied ? 'Copied!' : 'Copy'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0 gap-1"
+                            onClick={() => window.open(bookingData.meeting_link, '_blank')}
+                          >
+                            <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                            Join
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Calendar sync status */}
+                    {bookingData?.calendar_event_id && (
+                      <div className="mt-2 text-xs text-center text-green-600 bg-green-50 dark:bg-green-950/30 py-2 px-3 rounded-lg">
+                        <CheckCircle2 className="h-3 w-3 inline mr-1" />
+                        Event added to your calendar
+                      </div>
+                    )}
                   </div>
+
+                  {/* Manual Google Calendar Add Button (backup option) */}
+                  {selectedDate && selectedTime && syncToCalendar && !bookingData?.calendar_event_id && (
+                    <div className="mb-4 sm:mb-6">
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2 text-xs sm:text-sm"
+                        onClick={() => {
+                          const [h, m] = selectedTime.split(":").map(Number);
+                          const startTime = new Date(selectedDate!);
+                          startTime.setHours(h, m, 0, 0);
+                          const endTime = addMinutes(startTime, event.duration);
+                          
+                          const calendarUrl = generateGoogleCalendarLink(
+                            event,
+                            startTime,
+                            endTime,
+                            guestName,
+                            profile.full_name || 'Host',
+                            bookingData?.meeting_link,
+                            guestEmail
+                          );
+                          
+                          window.open(calendarUrl, '_blank');
+                        }}
+                      >
+                        <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                        Add to Google Calendar
+                      </Button>
+                    </div>
+                  )}
 
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button variant="outline" asChild className="flex-1 h-10 sm:h-11 text-xs sm:text-base">

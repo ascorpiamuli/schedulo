@@ -14,7 +14,7 @@ import {
   ArrowLeft, Phone, Video, Building2, Copy, CheckCircle, AlertCircle,
   Share2, MoreVertical, ChevronRight, CalendarDays, ExternalLink, Loader2,
   Filter, Download, Eye, Trash2, RefreshCw, Grid3x3, List, Table2,
-  X, ChevronLeft
+  X, ChevronLeft, Link2, Clipboard, Check, ExternalLink as LinkIcon
 } from "lucide-react";
 import { format, isPast, isToday, isTomorrow, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 // ============================================
@@ -79,6 +80,99 @@ function getInitials(name: string) {
     .toUpperCase()
     .slice(0, 2);
 }
+
+// ============================================
+// MEETING LINK COMPONENT
+// ============================================
+
+function MeetingLinkDisplay({ link, label = "Meeting Link" }: { link?: string | null; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+
+  if (!link) return null;
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    toast({ title: "✅ Copied!", description: "Meeting link copied to clipboard" });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-muted/30 rounded-lg p-2 sm:p-3 border text-xs sm:text-sm font-mono truncate">
+          {link}
+        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 gap-1 h-8 sm:h-9"
+                onClick={copyLink}
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                ) : (
+                  <Clipboard className="h-3 w-3 sm:h-4 sm:w-4" />
+                )}
+                <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Copy meeting link</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 gap-1 h-8 sm:h-9"
+                onClick={() => window.open(link, '_blank')}
+              >
+                <LinkIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Join</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Open meeting link</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// CALENDAR EVENT LINK COMPONENT
+// ============================================
+
+function CalendarEventLink({ calendarHtmlLink }: { calendarHtmlLink?: string | null }) {
+  if (!calendarHtmlLink) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t">
+      <p className="text-xs font-medium text-muted-foreground mb-2">Calendar Event</p>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full gap-2 text-xs"
+        onClick={() => window.open(calendarHtmlLink, '_blank')}
+      >
+        <ExternalLink className="h-3 w-3" />
+        View in Google Calendar
+      </Button>
+    </div>
+  );
+}
+
 // ============================================
 // BOOKING DETAILS MODAL - FULLY RESPONSIVE
 // ============================================
@@ -97,6 +191,7 @@ function BookingDetailsModal({
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleCancel = async () => {
     if (!booking) return;
@@ -129,7 +224,9 @@ function BookingDetailsModal({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: "Copied to clipboard" });
+    setCopied(true);
+    toast({ title: "✅ Copied!", description: "Copied to clipboard" });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -168,7 +265,7 @@ function BookingDetailsModal({
               }} 
             />
 
-            {/* Header - Responsive */}
+            {/* Header */}
             <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <Button 
@@ -221,7 +318,7 @@ function BookingDetailsModal({
               </div>
             </div>
 
-            {/* Scrollable content - Responsive */}
+            {/* Scrollable content */}
             <div 
               className={cn(
                 "overflow-y-auto overscroll-contain",
@@ -232,7 +329,30 @@ function BookingDetailsModal({
                 maxHeight: isMobile ? "calc(100dvh - 120px)" : "calc(90vh - 140px)"
               }}
             >
-              {/* Date & Time Card - Mobile optimized */}
+              {/* Meeting Link Section - Prominently displayed for video calls */}
+              {booking.event_types?.location_type === 'video' && booking.meeting_link && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-blue-200 dark:border-blue-900">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3">
+                    <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-600">
+                      <Video className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </div>
+                    <p className="text-base sm:text-lg font-semibold">Meeting Link</p>
+                  </div>
+                  <MeetingLinkDisplay link={booking.meeting_link} label="Google Meet Link" />
+                  
+                  {/* Quick join button */}
+                  <Button
+                    className="w-full mt-3 gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    size={isMobile ? "default" : "lg"}
+                    onClick={() => window.open(booking.meeting_link!, '_blank')}
+                  >
+                    <Video className="h-4 w-4" />
+                    Join Meeting Now
+                  </Button>
+                </div>
+              )}
+
+              {/* Date & Time Card */}
               <div className="bg-gradient-to-br from-primary/5 via-primary/5 to-transparent rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border">
                 <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                   <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary">
@@ -244,7 +364,6 @@ function BookingDetailsModal({
                   </div>
                 </div>
                 
-                {/* Time grid - Stack on mobile, side by side on larger screens */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                   <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-background/50">
                     <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
@@ -270,7 +389,7 @@ function BookingDetailsModal({
                 )}
               </div>
 
-              {/* Guest Information Card - Mobile optimized */}
+              {/* Guest Information Card */}
               <div className="rounded-xl sm:rounded-2xl border p-4 sm:p-5 md:p-6">
                 <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                   <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary">
@@ -279,7 +398,6 @@ function BookingDetailsModal({
                   <p className="text-base sm:text-lg font-semibold">Guest Information</p>
                 </div>
                 
-                {/* Stack vertically on mobile, side by side on tablet+ */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
                   <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-primary/20 shrink-0">
                     <AvatarFallback className="bg-primary/10 text-primary text-base sm:text-lg">
@@ -329,11 +447,22 @@ function BookingDetailsModal({
                     <p className="text-sm sm:text-base font-medium capitalize">
                       {getLocationLabel(booking.event_types?.location_type || 'video')}
                     </p>
-                    {booking.event_types?.location_details && (
+                    {booking.event_types?.location_type !== 'video' && booking.event_types?.location_details && (
                       <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">{booking.event_types.location_details}</p>
+                    )}
+                    {/* Show meeting link in location section as fallback */}
+                    {booking.event_types?.location_type === 'video' && booking.meeting_link && (
+                      <div className="mt-2">
+                        <MeetingLinkDisplay link={booking.meeting_link} label="Meeting Link" />
+                      </div>
                     )}
                   </div>
                 </div>
+
+                {/* Calendar Event Link */}
+                {booking.calendar_html_link && (
+                  <CalendarEventLink calendarHtmlLink={booking.calendar_html_link} />
+                )}
               </div>
 
               {/* Guest Notes */}
@@ -351,7 +480,22 @@ function BookingDetailsModal({
                 </div>
               )}
 
-              {/* Timeline - Mobile optimized */}
+              {/* Calendar Event Info */}
+              {booking.calendar_event_id && (
+                <div className="rounded-xl sm:rounded-2xl border p-4 sm:p-5 md:p-6 bg-green-50/50 dark:bg-green-950/10">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3">
+                    <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-green-500/10 text-green-600">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm sm:text-base font-medium">Calendar Synced</p>
+                      <p className="text-xs text-muted-foreground">Event ID: {booking.calendar_event_id.slice(0, 8)}...</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline */}
               <div className="rounded-xl sm:rounded-2xl border p-4 sm:p-5 md:p-6">
                 <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                   <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary">
@@ -386,11 +530,11 @@ function BookingDetailsModal({
                 </div>
               </div>
 
-              {/* Additional spacing at bottom for scroll */}
+              {/* Additional spacing at bottom */}
               <div className="h-2 sm:h-4" />
             </div>
 
-            {/* Footer with cancel button - Responsive */}
+            {/* Footer with cancel button */}
             {new Date(booking.start_time) > new Date() && booking.status === 'confirmed' && (
               <div className="sticky bottom-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t p-3 sm:p-4 md:p-6 shrink-0">
                 <div className="max-w-3xl mx-auto">
@@ -459,6 +603,16 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
   const event = booking.event_types;
   const startDate = new Date(booking.start_time);
   const isUpcoming = startDate > new Date() && booking.status === 'confirmed';
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+
+  const copyMeetingLink = (e: React.MouseEvent, link: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    toast({ title: "✅ Copied!", description: "Meeting link copied to clipboard" });
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <motion.div
@@ -510,6 +664,63 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
             </div>
           </div>
 
+          {/* Meeting Link Preview (if video call) */}
+          {event?.location_type === 'video' && booking.meeting_link && (
+            <div className="mt-2 mb-3 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <Video className="h-3 w-3 text-blue-600 shrink-0" />
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium truncate">
+                    Meet Link
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => copyMeetingLink(e, booking.meeting_link!)}
+                        >
+                          {copied ? (
+                            <Check className="h-3 w-3" />
+                          ) : (
+                            <Clipboard className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copy link</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(booking.meeting_link!, '_blank');
+                          }}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Join meeting</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isUpcoming && (
             <Button
               variant="ghost"
@@ -539,6 +750,17 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
   onCancel: (b: Booking) => void;
   onRowClick: (id: string) => void;
 }) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const copyMeetingLink = (e: React.MouseEvent, id: string, link: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(link);
+    setCopiedId(id);
+    toast({ title: "✅ Copied!", description: "Meeting link copied to clipboard" });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   return (
     <div className="rounded-md border overflow-hidden w-full">
       <Table>
@@ -549,8 +771,9 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
             <TableHead>Guest</TableHead>
             <TableHead className="w-[100px]">Duration</TableHead>
             <TableHead className="w-[100px]">Location</TableHead>
+            <TableHead className="w-[200px]">Meeting Link</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="w-[80px] text-right">Actions</TableHead>
+            <TableHead className="w-[100px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -608,6 +831,60 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                   </div>
                 </TableCell>
                 <TableCell>
+                  {booking.event_types?.location_type === 'video' && booking.meeting_link ? (
+                    <div className="flex items-center gap-1 max-w-[140px]">
+                      <div className="flex-1 truncate">
+                        <span className="text-xs text-muted-foreground truncate block">
+                          {booking.meeting_link.replace(/^https?:\/\//, '').substring(0, 20)}...
+                        </span>
+                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 shrink-0"
+                              onClick={(e) => copyMeetingLink(e, booking.id, booking.meeting_link!)}
+                            >
+                              {copiedId === booking.id ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Clipboard className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Copy link</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(booking.meeting_link!, '_blank');
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Join</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Badge 
                     variant={booking.status === 'confirmed' ? 'default' : 'destructive'}
                     className={cn(
@@ -653,7 +930,7 @@ export default function Bookings() {
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const { data: bookings, isLoading } = useBookings(tab, search);
+  const { data: bookings, isLoading, refetch } = useBookings(tab, search);
   const cancelMutation = useCancelBooking();
   const { toast } = useToast();
   const [cancelDialog, setCancelDialog] = useState<Booking | null>(null);
@@ -692,6 +969,7 @@ export default function Bookings() {
       });
 
       setCancelDialog(null);
+      refetch();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -700,14 +978,12 @@ export default function Bookings() {
   const handleRowClick = (id: string) => {
     setSelectedBookingId(id);
     setModalOpen(true);
-    // Update URL without navigation
     window.history.pushState({}, '', `/dashboard/bookings/${id}`);
   };
 
   const handleModalClose = () => {
     setModalOpen(false);
     setSelectedBookingId(null);
-    // Remove booking ID from URL
     window.history.pushState({}, '', '/dashboard/bookings');
   };
 
@@ -724,13 +1000,13 @@ export default function Bookings() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
           <Button variant="outline" size="sm" className="gap-2">
             <Download className="h-4 w-4" />
             Export
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
           </Button>
         </div>
       </div>
@@ -785,10 +1061,6 @@ export default function Bookings() {
         <p className="text-sm text-muted-foreground">
           Showing <span className="font-medium text-foreground">{filtered.length}</span> bookings
         </p>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
       </div>
 
       {/* Bookings display - full width */}
