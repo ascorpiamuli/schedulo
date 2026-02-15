@@ -59,20 +59,20 @@ function slugify(s: string) {
 // ============================================
 
 const LOCATION_OPTIONS = [
-  { value: "video", label: "Video Call", icon: Video, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-  { value: "phone", label: "Phone Call", icon: Phone, color: "text-emerald-500", bgColor: "bg-emerald-500/10" },
-  { value: "in_person", label: "In Person", icon: Building2, color: "text-amber-500", bgColor: "bg-amber-500/10" },
+  { value: "video", label: "Video Call", icon: Video, color: "text-[#1E3A8A]", bgColor: "bg-[#1E3A8A]/10" },
+  { value: "phone", label: "Phone Call", icon: Phone, color: "text-[#C2410C]", bgColor: "bg-[#C2410C]/10" },
+  { value: "in_person", label: "In Person", icon: Building2, color: "text-[#1E3A8A]", bgColor: "bg-[#1E3A8A]/10" },
 ];
 
 const COLOR_OPTIONS = [
-  { value: "#7C3AED", name: "Violet" },
+  { value: "#1E3A8A", name: "Dark Blue" },
+  { value: "#C2410C", name: "Orange Dark" },
   { value: "#2563EB", name: "Blue" },
   { value: "#059669", name: "Emerald" },
   { value: "#D97706", name: "Amber" },
   { value: "#DC2626", name: "Red" },
   { value: "#EC4899", name: "Pink" },
   { value: "#0891B2", name: "Cyan" },
-  { value: "#4F46E5", name: "Indigo" },
 ];
 
 const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
@@ -111,7 +111,7 @@ const defaultForm: FormData = {
   duration: 30,
   location_type: "video",
   location_details: "",
-  color: "#7C3AED",
+  color: "#1E3A8A",
   buffer_before: 0,
   buffer_after: 0,
   is_active: true,
@@ -126,9 +126,9 @@ const defaultForm: FormData = {
 function InstructionCard({ icon: Icon, title, desc }: { icon: any; title: string; desc: string }) {
   return (
     <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border">
-      <Icon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+      <Icon className="h-4 w-4 text-[#1E3A8A] shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-medium">{title}</p>
+        <p className="text-sm font-medium text-[#1E3A8A]">{title}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
     </div>
@@ -136,22 +136,29 @@ function InstructionCard({ icon: Icon, title, desc }: { icon: any; title: string
 }
 
 function StatsCard({ icon: Icon, label, value, trend, color = "primary" }: any) {
+  const colorMap: any = {
+    primary: "#1E3A8A",
+    green: "#059669",
+    blue: "#2563EB",
+    amber: "#D97706"
+  };
+
   return (
     <Card className="border-0 shadow-sm bg-gradient-to-br from-background to-muted/20">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs text-muted-foreground mb-1">{label}</p>
-            <p className="text-xl sm:text-2xl font-bold font-['Space_Grotesk']">{value}</p>
+            <p className="text-xl sm:text-2xl font-bold font-['Space_Grotesk'] text-[#1E3A8A]">{value}</p>
             {trend && (
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+              <p className="text-xs text-[#C2410C] mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
                 {trend}
               </p>
             )}
           </div>
-          <div className={cn("rounded-xl p-2.5", `bg-${color}/10`)}>
-            <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", `text-${color}`)} />
+          <div className="rounded-xl p-2.5" style={{ backgroundColor: `${colorMap[color]}10` }}>
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: colorMap[color] }} />
           </div>
         </div>
       </CardContent>
@@ -170,6 +177,7 @@ function CalendarConnection({ userId }: { userId: string }) {
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [autoRefreshTimer, setAutoRefreshTimer] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   // Check connection status on mount and after OAuth callback
@@ -195,7 +203,49 @@ function CalendarConnection({ userId }: { userId: string }) {
       });
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    // Cleanup timer on unmount
+    return () => {
+      if (autoRefreshTimer) {
+        clearTimeout(autoRefreshTimer);
+      }
+    };
   }, [userId]);
+
+  // Auto-refresh token when it's about to expire
+  useEffect(() => {
+    if (tokenInfo?.expires_at) {
+      const expiryTime = new Date(tokenInfo.expires_at).getTime();
+      const currentTime = new Date().getTime();
+      const timeUntilExpiry = expiryTime - currentTime;
+      
+      // Refresh 5 minutes before expiry (300,000 ms)
+      const refreshBuffer = 5 * 60 * 1000;
+      const refreshTime = Math.max(timeUntilExpiry - refreshBuffer, 0);
+      
+      console.log(`⏰ [Calendar] Token expires in ${Math.round(timeUntilExpiry / 1000 / 60)} minutes`);
+      console.log(`🔄 [Calendar] Auto-refresh scheduled in ${Math.round(refreshTime / 1000 / 60)} minutes`);
+      
+      // Clear any existing timer
+      if (autoRefreshTimer) {
+        clearTimeout(autoRefreshTimer);
+      }
+      
+      // Set new timer
+      const timer = setTimeout(() => {
+        console.log('🔄 [Calendar] Auto-refresh triggered');
+        refreshToken(true); // silent refresh
+      }, refreshTime);
+      
+      setAutoRefreshTimer(timer);
+    }
+    
+    return () => {
+      if (autoRefreshTimer) {
+        clearTimeout(autoRefreshTimer);
+      }
+    };
+  }, [tokenInfo?.expires_at]);
 
   const checkConnection = async () => {
     console.log('🔍 [Calendar] Checking connection for user:', userId);
@@ -227,6 +277,13 @@ function CalendarConnection({ userId }: { userId: string }) {
           isExpired,
           hasRefreshToken: !!data.refresh_token
         });
+
+        // If token is expired, try to refresh automatically
+        if (isExpired && data.refresh_token) {
+          console.log('🔄 [Calendar] Token expired, attempting auto-refresh...');
+          await refreshToken(true);
+          return; // refreshToken will update state
+        }
       }
       
       setIsConnected(!!data);
@@ -236,6 +293,48 @@ function CalendarConnection({ userId }: { userId: string }) {
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshToken = async (silent = false) => {
+    console.log('🔄 [Calendar] Refreshing token...', silent ? '(silent mode)' : '');
+    setRefreshing(true);
+    
+    try {
+      // Invoke the refresh-calendar-token edge function
+      const { data, error } = await supabase.functions.invoke('refresh-calendar-token', {
+        body: { userId }
+      });
+
+      if (error) {
+        console.error('❌ [Calendar] Refresh error:', error);
+        throw error;
+      }
+
+      console.log('✅ [Calendar] Token refreshed successfully:', data);
+
+      // Re-check connection to get updated token info
+      await checkConnection();
+      
+      if (!silent) {
+        toast({
+          title: "✅ Token Refreshed",
+          description: "Calendar access token has been refreshed successfully.",
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ [Calendar] Token refresh error:', error);
+      setError(error.message);
+      
+      if (!silent) {
+        toast({
+          title: "❌ Refresh Failed",
+          description: error.message || "Failed to refresh token",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -304,6 +403,13 @@ function CalendarConnection({ userId }: { userId: string }) {
       }
 
       console.log('✅ [Calendar] Successfully disconnected');
+      
+      // Clear any auto-refresh timer
+      if (autoRefreshTimer) {
+        clearTimeout(autoRefreshTimer);
+        setAutoRefreshTimer(null);
+      }
+      
       setIsConnected(false);
       setTokenInfo(null);
       setError(null);
@@ -323,34 +429,22 @@ function CalendarConnection({ userId }: { userId: string }) {
     }
   };
 
-  const refreshToken = async () => {
-    console.log('🔄 [Calendar] Manually refreshing token...');
-    setRefreshing(true);
+  const formatTimeUntilExpiry = () => {
+    if (!tokenInfo?.expires_at) return 'Unknown';
     
-    try {
-      // This will trigger your Edge Function to refresh the token
-      const { error } = await supabase.functions.invoke('refresh-calendar-token', {
-        body: { userId }
-      });
-
-      if (error) throw error;
-
-      await checkConnection(); // Re-check connection status
-      
-      toast({
-        title: "✅ Token Refreshed",
-        description: "Calendar access token has been refreshed successfully.",
-      });
-    } catch (error: any) {
-      console.error('❌ [Calendar] Token refresh error:', error);
-      toast({
-        title: "❌ Refresh Failed",
-        description: error.message || "Failed to refresh token",
-        variant: "destructive"
-      });
-    } finally {
-      setRefreshing(false);
-    }
+    const expiryTime = new Date(tokenInfo.expires_at).getTime();
+    const currentTime = new Date().getTime();
+    const timeUntilExpiry = expiryTime - currentTime;
+    
+    if (timeUntilExpiry <= 0) return 'Expired';
+    
+    const minutes = Math.floor(timeUntilExpiry / 1000 / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''}`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
+    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
   };
 
   if (loading) {
@@ -358,7 +452,7 @@ function CalendarConnection({ userId }: { userId: string }) {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-[#1E3A8A]" />
             <span className="ml-2 text-sm text-muted-foreground">Checking calendar connection...</span>
           </div>
         </CardContent>
@@ -407,16 +501,16 @@ function CalendarConnection({ userId }: { userId: string }) {
         <div className="flex items-start gap-4">
           <div className={cn(
             "p-3 rounded-xl",
-            isConnected ? "bg-green-500/10" : "bg-primary/10"
+            isConnected ? "bg-green-500/10" : "bg-[#1E3A8A]/10"
           )}>
             <Calendar className={cn(
               "h-6 w-6",
-              isConnected ? "text-green-600" : "text-primary"
+              isConnected ? "text-green-600" : "text-[#1E3A8A]"
             )} />
           </div>
           
           <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-1">Google Calendar Integration</h3>
+            <h3 className="text-lg font-semibold text-[#1E3A8A] mb-1">Google Calendar Integration</h3>
             <p className="text-sm text-muted-foreground mb-4">
               {isConnected 
                 ? "Your calendar is connected. When guests book your events, they'll automatically appear with Google Meet links."
@@ -428,22 +522,24 @@ function CalendarConnection({ userId }: { userId: string }) {
                 <div className="flex items-center gap-2 text-xs">
                   <CheckCircle className="h-3 w-3 text-green-500" />
                   <span className="text-muted-foreground">Connected since:</span>
-                  <span className="font-medium">{new Date(tokenInfo.created_at).toLocaleDateString()}</span>
+                  <span className="font-medium text-[#1E3A8A]">{new Date(tokenInfo.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <Clock className="h-3 w-3 text-amber-500" />
-                  <span className="text-muted-foreground">Token expires:</span>
-                  <span className="font-medium">
-                    {tokenInfo.expires_at 
-                      ? new Date(tokenInfo.expires_at).toLocaleString()
-                      : 'Never'}
-                  </span>
+                  <span className="text-muted-foreground">Expires in:</span>
+                  <span className="font-medium text-[#1E3A8A]">{formatTimeUntilExpiry()}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <RefreshCw className="h-3 w-3 text-blue-500" />
+                  <RefreshCw className="h-3 w-3 text-[#1E3A8A]" />
                   <span className="text-muted-foreground">Auto-refresh:</span>
-                  <span className="font-medium">Enabled (automatic)</span>
+                  <span className="font-medium text-[#1E3A8A]">Enabled (5 min before expiry)</span>
                 </div>
+                {tokenInfo.expires_at && new Date(tokenInfo.expires_at) < new Date() && (
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Token expired - refreshing automatically...</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -453,25 +549,30 @@ function CalendarConnection({ userId }: { userId: string }) {
                   <Button 
                     variant="outline" 
                     onClick={disconnectCalendar}
-                    className="gap-2"
+                    className="gap-2 border-[#C2410C]/20 text-[#C2410C] hover:bg-[#C2410C]/10"
                   >
                     <XCircle className="h-4 w-4" />
                     Disconnect
                   </Button>
                   <Button 
                     variant="ghost" 
-                    onClick={checkConnection}
-                    className="gap-2"
+                    onClick={() => refreshToken(false)}
+                    disabled={refreshing}
+                    className="gap-2 text-[#1E3A8A] hover:bg-[#1E3A8A]/10"
                   >
-                    <RefreshCw className="h-4 w-4" />
-                    Refresh Status
+                    {refreshing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    {refreshing ? "Refreshing..." : "Refresh Now"}
                   </Button>
                 </>
               ) : (
                 <Button 
                   onClick={connectGoogleCalendar}
                   disabled={connecting}
-                  className="gap-2"
+                  className="gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
                 >
                   {connecting ? (
                     <>
@@ -495,21 +596,21 @@ function CalendarConnection({ userId }: { userId: string }) {
           <div className="flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-medium">Automatic Sync</p>
+              <p className="text-xs font-medium text-[#1E3A8A]">Automatic Sync</p>
               <p className="text-xs text-muted-foreground">Bookings appear in your calendar instantly</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <Video className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+            <Video className="h-4 w-4 text-[#1E3A8A] shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-medium">Google Meet Links</p>
+              <p className="text-xs font-medium text-[#1E3A8A]">Google Meet Links</p>
               <p className="text-xs text-muted-foreground">Auto-generated for every video call</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <Mail className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <Mail className="h-4 w-4 text-[#C2410C] shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-medium">Email Invites</p>
+              <p className="text-xs font-medium text-[#1E3A8A]">Email Invites</p>
               <p className="text-xs text-muted-foreground">Guests get calendar invites with links</p>
             </div>
           </div>
@@ -525,7 +626,6 @@ function CalendarConnection({ userId }: { userId: string }) {
     </Card>
   );
 }
-
 // ============================================
 // TABLE VIEW COMPONENT
 // ============================================
@@ -534,15 +634,15 @@ function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggl
   return (
     <div className="rounded-lg border bg-card overflow-hidden w-full">
       <Table>
-        <TableHeader className="bg-muted/50">
+        <TableHeader className="bg-[#1E3A8A]/5">
           <TableRow>
-            <TableHead className="w-[250px]">Event</TableHead>
-            <TableHead className="w-[100px]">Duration</TableHead>
-            <TableHead className="w-[120px]">Location</TableHead>
-            <TableHead className="w-[100px]">Price</TableHead>
-            <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="w-[80px]">Bookings</TableHead>
-            <TableHead className="w-[100px] text-right">Actions</TableHead>
+            <TableHead className="w-[250px] text-[#1E3A8A]">Event</TableHead>
+            <TableHead className="w-[100px] text-[#1E3A8A]">Duration</TableHead>
+            <TableHead className="w-[120px] text-[#1E3A8A]">Location</TableHead>
+            <TableHead className="w-[100px] text-[#1E3A8A]">Price</TableHead>
+            <TableHead className="w-[100px] text-[#1E3A8A]">Status</TableHead>
+            <TableHead className="w-[80px] text-[#1E3A8A]">Bookings</TableHead>
+            <TableHead className="w-[100px] text-right text-[#1E3A8A]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -557,20 +657,20 @@ function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggl
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full" style={{ backgroundColor: event.color }} />
                     <div>
-                      <p className="font-medium text-sm">{event.title}</p>
+                      <p className="font-medium text-sm text-[#1E3A8A]">{event.title}</p>
                       <p className="text-xs text-muted-foreground">/{event.slug}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    <Clock className="h-3 w-3 mr-1" />
+                  <Badge variant="outline" className="text-xs border-[#1E3A8A]/20">
+                    <Clock className="h-3 w-3 mr-1 text-[#1E3A8A]" />
                     {event.duration}min
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5">
-                    <LocationIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <LocationIcon className="h-3.5 w-3.5" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} />
                     <span className="text-xs capitalize">
                       {event.location_type === "in_person" ? "In person" : event.location_type}
                     </span>
@@ -578,7 +678,7 @@ function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggl
                 </TableCell>
                 <TableCell>
                   {(event.price_cents ?? 0) > 0 ? (
-                    <span className="text-xs font-medium">
+                    <span className="text-xs font-medium text-[#C2410C]">
                       {currency?.symbol}{((event.price_cents ?? 0) / 100).toFixed(2)}
                     </span>
                   ) : (
@@ -597,7 +697,8 @@ function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggl
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={bookingCount > 0 ? "default" : "secondary"} className="text-xs">
+                  <Badge variant={bookingCount > 0 ? "default" : "secondary"} 
+                    className={cn("text-xs", bookingCount > 0 && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90")}>
                     {bookingCount}
                   </Badge>
                 </TableCell>
@@ -606,7 +707,7 @@ function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggl
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onCopy(event.slug)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-[#1E3A8A]" onClick={() => onCopy(event.slug)}>
                             <Copy className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
@@ -623,14 +724,14 @@ function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggl
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem onClick={() => onEdit(event)} className="text-xs">
+                        <DropdownMenuItem onClick={() => onEdit(event)} className="text-xs hover:text-[#1E3A8A]">
                           <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(event)} className="text-xs">
+                        <DropdownMenuItem onClick={() => onDuplicate(event)} className="text-xs hover:text-[#C2410C]">
                           <Sparkles className="h-3.5 w-3.5 mr-2" /> Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onToggle(event)} className="text-xs">
+                        <DropdownMenuItem onClick={() => onToggle(event)} className="text-xs hover:text-[#1E3A8A]">
                           {event.is_active ? (
                             <>
                               <EyeOff className="h-3.5 w-3.5 mr-2" /> Deactivate
@@ -926,7 +1027,7 @@ export default function EventTypes() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#1E3A8A] mx-auto mb-4" />
           <p className="text-sm text-muted-foreground">Loading your events...</p>
         </div>
       </div>
@@ -936,7 +1037,7 @@ export default function EventTypes() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 p-6 sm:p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1E3A8A] via-[#1E3A8A]/80 to-[#C2410C]/60 p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/5 rounded-full blur-2xl" />
         
@@ -957,7 +1058,7 @@ export default function EventTypes() {
             <Button 
               onClick={openCreate} 
               size="lg"
-              className="bg-white text-primary hover:bg-white/90 shadow-lg gap-2 w-full sm:w-auto"
+              className="bg-white text-[#1E3A8A] hover:bg-white/90 shadow-lg gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               <span>Create Event</span>
@@ -1006,12 +1107,12 @@ export default function EventTypes() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
-          <TabsTrigger value="events" className="gap-2">
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px] bg-[#1E3A8A]/10">
+          <TabsTrigger value="events" className="gap-2 data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">
             <Calendar className="h-4 w-4" />
             Events
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="gap-2">
+          <TabsTrigger value="calendar" className="gap-2 data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">
             <CalendarRange className="h-4 w-4" />
             Calendar Sync
           </TabsTrigger>
@@ -1023,10 +1124,10 @@ export default function EventTypes() {
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Tabs defaultValue="all" className="w-full sm:w-auto" onValueChange={(v) => setFilterStatus(v as any)}>
-                <TabsList className="grid grid-cols-3 w-full sm:w-[300px]">
-                  <TabsTrigger value="all" className="text-xs">All ({stats.total})</TabsTrigger>
-                  <TabsTrigger value="active" className="text-xs">Active ({stats.active})</TabsTrigger>
-                  <TabsTrigger value="inactive" className="text-xs">Inactive ({stats.total - stats.active})</TabsTrigger>
+                <TabsList className="grid grid-cols-3 w-full sm:w-[300px] bg-[#1E3A8A]/10">
+                  <TabsTrigger value="all" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">All ({stats.total})</TabsTrigger>
+                  <TabsTrigger value="active" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">Active ({stats.active})</TabsTrigger>
+                  <TabsTrigger value="inactive" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">Inactive ({stats.total - stats.active})</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -1036,7 +1137,7 @@ export default function EventTypes() {
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="icon"
-                  className="h-8 w-8"
+                  className={cn("h-8 w-8", viewMode === "grid" && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90")}
                   onClick={() => setViewMode("grid")}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -1044,7 +1145,7 @@ export default function EventTypes() {
                 <Button
                   variant={viewMode === "table" ? "default" : "ghost"}
                   size="icon"
-                  className="h-8 w-8"
+                  className={cn("h-8 w-8", viewMode === "table" && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90")}
                   onClick={() => setViewMode("table")}
                   disabled={isMobile}
                 >
@@ -1059,12 +1160,12 @@ export default function EventTypes() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border p-4 mb-4"
+              className="rounded-xl bg-gradient-to-r from-[#1E3A8A]/5 to-[#C2410C]/10 border p-4 mb-4"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-medium">Quick Tips</h3>
+                  <Info className="h-4 w-4 text-[#1E3A8A]" />
+                  <h3 className="text-sm font-medium text-[#1E3A8A]">Quick Tips</h3>
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowTips(false)}>
                   <X className="h-3 w-3" />
@@ -1095,18 +1196,18 @@ export default function EventTypes() {
             <Card className="text-center py-12">
               <CardContent className="space-y-4">
                 <div className="relative mx-auto w-fit">
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl" />
-                  <Calendar className="h-12 w-12 text-primary/60 relative" />
+                  <div className="absolute inset-0 bg-[#1E3A8A]/20 rounded-full blur-3xl" />
+                  <Calendar className="h-12 w-12 text-[#1E3A8A]/60 relative" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">No events found</h3>
+                  <h3 className="text-lg font-semibold text-[#1E3A8A]">No events found</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {filterStatus !== "all" 
                       ? `You don't have any ${filterStatus} events.` 
                       : "Create your first event to start accepting bookings."}
                   </p>
                 </div>
-                <Button onClick={openCreate} className="gap-2">
+                <Button onClick={openCreate} className="gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90">
                   <Plus className="h-4 w-4" />
                   Create your first event
                 </Button>
@@ -1136,17 +1237,15 @@ export default function EventTypes() {
                     
                     return (
                       <Card key={event.id} className={cn(
-                        "group relative overflow-hidden transition-all hover:shadow-lg",
+                        "group relative overflow-hidden transition-all hover:shadow-lg border-t-4",
                         !event.is_active && "opacity-70"
-                      )}>
-                        <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: event.color }} />
-                        
+                      )} style={{ borderTopColor: event.color }}>
                         <CardContent className="p-5">
                           <div className="flex justify-between items-start gap-2 mb-3">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: event.color }} />
-                                <h3 className="font-semibold text-base truncate">{event.title}</h3>
+                                <h3 className="font-semibold text-base truncate text-[#1E3A8A]">{event.title}</h3>
                               </div>
                               <p className="text-xs text-muted-foreground font-mono truncate">/{event.slug}</p>
                             </div>
@@ -1158,17 +1257,17 @@ export default function EventTypes() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-36">
-                                <DropdownMenuItem onClick={() => copyLink(event.slug)} className="text-xs">
+                                <DropdownMenuItem onClick={() => copyLink(event.slug)} className="text-xs hover:text-[#1E3A8A]">
                                   <Copy className="h-3.5 w-3.5 mr-2" /> Copy link
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => openEdit(event)} className="text-xs">
+                                <DropdownMenuItem onClick={() => openEdit(event)} className="text-xs hover:text-[#1E3A8A]">
                                   <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => duplicateEvent(event)} className="text-xs">
+                                <DropdownMenuItem onClick={() => duplicateEvent(event)} className="text-xs hover:text-[#C2410C]">
                                   <Sparkles className="h-3.5 w-3.5 mr-2" /> Duplicate
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => toggleActive(event)} className="text-xs">
+                                <DropdownMenuItem onClick={() => toggleActive(event)} className="text-xs hover:text-[#1E3A8A]">
                                   {event.is_active ? (
                                     <><EyeOff className="h-3.5 w-3.5 mr-2" /> Deactivate</>
                                   ) : (
@@ -1190,16 +1289,16 @@ export default function EventTypes() {
                           )}
 
                           <div className="flex flex-wrap gap-1.5 mb-4">
-                            <Badge variant="secondary" className="gap-1 text-xs py-0.5">
-                              <Clock className="h-3 w-3" /> {event.duration}min
+                            <Badge variant="secondary" className="gap-1 text-xs py-0.5 border-[#1E3A8A]/20">
+                              <Clock className="h-3 w-3 text-[#1E3A8A]" /> {event.duration}min
                             </Badge>
-                            <Badge variant="secondary" className="gap-1 text-xs py-0.5">
-                              <LocationIcon className="h-3 w-3" /> 
+                            <Badge variant="secondary" className="gap-1 text-xs py-0.5 border-[#1E3A8A]/20">
+                              <LocationIcon className="h-3 w-3" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} /> 
                               {event.location_type === "in_person" ? "In person" : event.location_type}
                             </Badge>
                             {(event.price_cents ?? 0) > 0 && (
-                              <Badge variant="secondary" className="gap-1 text-xs py-0.5 bg-amber-500/10">
-                                <DollarSign className="h-3 w-3" /> 
+                              <Badge variant="secondary" className="gap-1 text-xs py-0.5 bg-amber-500/10 border-amber-500/20">
+                                <DollarSign className="h-3 w-3 text-[#C2410C]" /> 
                                 {currency?.symbol}{((event.price_cents ?? 0) / 100).toFixed(2)}
                               </Badge>
                             )}
@@ -1219,7 +1318,8 @@ export default function EventTypes() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Badge variant={bookingCount > 0 ? "default" : "outline"} 
-                                    className={cn("text-xs cursor-help", bookingCount > 0 && "bg-primary/10 text-primary")}>
+                                    className={cn("text-xs cursor-help", 
+                                      bookingCount > 0 && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white")}>
                                     <Users className="h-3 w-3 mr-1" />
                                     {bookingCount} {bookingCount === 1 ? 'booking' : 'bookings'}
                                   </Badge>
@@ -1236,16 +1336,16 @@ export default function EventTypes() {
                   })}
 
                   {/* Create Card */}
-                  <Card onClick={openCreate} className="cursor-pointer border-dashed hover:border-primary hover:bg-primary/5 transition-all">
+                  <Card onClick={openCreate} className="cursor-pointer border-dashed hover:border-[#1E3A8A] hover:bg-[#1E3A8A]/5 transition-all">
                     <CardContent className="p-5 h-full flex flex-col items-center justify-center text-center min-h-[240px]">
-                      <div className="rounded-full bg-primary/10 p-3 mb-3">
-                        <Plus className="h-5 w-5 text-primary" />
+                      <div className="rounded-full bg-[#1E3A8A]/10 p-3 mb-3">
+                        <Plus className="h-5 w-5 text-[#1E3A8A]" />
                       </div>
-                      <h3 className="font-semibold text-sm">Create new event</h3>
+                      <h3 className="font-semibold text-sm text-[#1E3A8A]">Create new event</h3>
                       <p className="text-xs text-muted-foreground mt-1 max-w-[150px]">
                         Add another way for people to book with you
                       </p>
-                      <Badge variant="outline" className="mt-3 text-[10px]">
+                      <Badge variant="outline" className="mt-3 text-[10px] border-[#1E3A8A]/20">
                         {stats.total} total · {stats.active} active
                       </Badge>
                     </CardContent>
@@ -1259,6 +1359,21 @@ export default function EventTypes() {
         {/* Calendar Sync Tab */}
         <TabsContent value="calendar" className="mt-6">
           {userId && <CalendarConnection userId={userId} />}
+          
+          {/* Pasbest Ventures Attribution */}
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              A product of{" "}
+              <a 
+                href="https://pasbestventures.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[#1E3A8A] hover:text-[#C2410C] transition-colors font-medium"
+              >
+                Pasbest Ventures Limited
+              </a>
+            </p>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -1271,10 +1386,10 @@ export default function EventTypes() {
           <div className="border-b px-6 py-4 flex items-center justify-between bg-background sticky top-0 z-50">
             <DialogHeader className="p-0">
               <DialogTitle className="text-base font-['Space_Grotesk'] flex items-center gap-2">
-                <div className="rounded-lg bg-primary/10 p-1.5">
-                  {editingId ? <Pencil className="h-4 w-4 text-primary" /> : <Plus className="h-4 w-4 text-primary" />}
+                <div className="rounded-lg bg-[#1E3A8A]/10 p-1.5">
+                  {editingId ? <Pencil className="h-4 w-4 text-[#1E3A8A]" /> : <Plus className="h-4 w-4 text-[#1E3A8A]" />}
                 </div>
-                <span className="text-sm">{editingId ? "Edit event" : "Create new event"}</span>
+                <span className="text-sm text-[#1E3A8A]">{editingId ? "Edit event" : "Create new event"}</span>
               </DialogTitle>
             </DialogHeader>
             <Button variant="ghost" size="icon" onClick={() => setDialogOpen(false)} className="h-8 w-8 rounded-full hover:bg-muted">
@@ -1287,13 +1402,13 @@ export default function EventTypes() {
               {/* Basic Info */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">1</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs">1</span>
                   Basic Information
                 </h3>
                 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm">Title <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm text-[#1E3A8A]">Title <span className="text-red-500">*</span></Label>
                     <Input
                       value={form.title}
                       onChange={(e) => {
@@ -1301,19 +1416,19 @@ export default function EventTypes() {
                         setForm(f => ({ ...f, title, slug: editingId ? f.slug : slugify(title) }));
                       }}
                       placeholder="e.g., 30-minute Discovery Call"
-                      className="h-10"
+                      className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm">URL Slug <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm text-[#1E3A8A]">URL Slug <span className="text-red-500">*</span></Label>
                     <div className="flex items-center">
                       <span className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0">/</span>
                       <Input
                         value={form.slug}
                         onChange={(e) => setForm(f => ({ ...f, slug: slugify(e.target.value) }))}
                         placeholder="30-min-call"
-                        className="h-10 rounded-l-none"
+                        className="h-10 rounded-l-none focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                       />
                     </div>
                     <p className="text-xs text-muted-foreground break-all bg-muted/30 p-2 rounded">
@@ -1322,13 +1437,13 @@ export default function EventTypes() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm">Description</Label>
+                    <Label className="text-sm text-[#1E3A8A]">Description</Label>
                     <Textarea
                       value={form.description}
                       onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                       placeholder="Brief description of what this meeting is about..."
                       rows={3}
-                      className="resize-none"
+                      className="resize-none focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                     />
                   </div>
                 </div>
@@ -1337,16 +1452,16 @@ export default function EventTypes() {
               {/* Meeting Settings */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">2</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs">2</span>
                   Meeting Settings
                 </h3>
                 
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm">Duration</Label>
+                      <Label className="text-sm text-[#1E3A8A]">Duration</Label>
                       <Select value={String(form.duration)} onValueChange={(v) => setForm(f => ({ ...f, duration: Number(v) }))}>
-                        <SelectTrigger className="h-10">
+                        <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1358,9 +1473,9 @@ export default function EventTypes() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm">Location Type</Label>
+                      <Label className="text-sm text-[#1E3A8A]">Location Type</Label>
                       <Select value={form.location_type} onValueChange={(v) => setForm(f => ({ ...f, location_type: v }))}>
-                        <SelectTrigger className="h-10">
+                        <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1378,12 +1493,12 @@ export default function EventTypes() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm">Location Details</Label>
+                    <Label className="text-sm text-[#1E3A8A]">Location Details</Label>
                     <Input
                       value={form.location_details}
                       onChange={(e) => setForm(f => ({ ...f, location_details: e.target.value }))}
                       placeholder="Add meeting link, address, or phone number"
-                      className="h-10"
+                      className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                     />
                     <p className="text-xs text-muted-foreground">
                       {form.location_type === 'video' 
@@ -1398,7 +1513,7 @@ export default function EventTypes() {
               <div className="space-y-3">
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center gap-2 text-sm text-primary w-full justify-center py-2.5 border rounded-lg hover:bg-primary/5 transition-colors"
+                  className="flex items-center gap-2 text-sm text-[#1E3A8A] w-full justify-center py-2.5 border rounded-lg hover:bg-[#1E3A8A]/5 transition-colors"
                 >
                   <Settings2 className="h-4 w-4" />
                   {showAdvanced ? "Hide" : "Show"} advanced options
@@ -1409,48 +1524,48 @@ export default function EventTypes() {
                   <div className="space-y-4 pt-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-sm">Buffer before (minutes)</Label>
+                        <Label className="text-sm text-[#1E3A8A]">Buffer before (minutes)</Label>
                         <Input
                           type="number"
                           min={0}
                           step={5}
                           value={form.buffer_before}
                           onChange={(e) => setForm(f => ({ ...f, buffer_before: Number(e.target.value) }))}
-                          className="h-10"
+                          className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm">Buffer after (minutes)</Label>
+                        <Label className="text-sm text-[#1E3A8A]">Buffer after (minutes)</Label>
                         <Input
                           type="number"
                           min={0}
                           step={5}
                           value={form.buffer_after}
                           onChange={(e) => setForm(f => ({ ...f, buffer_after: Number(e.target.value) }))}
-                          className="h-10"
+                          className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-sm">Price</Label>
+                        <Label className="text-sm text-[#1E3A8A]">Price</Label>
                         <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1E3A8A]" />
                           <Input
                             type="text"
                             value={priceInput}
                             onChange={(e) => handlePriceChange(e.target.value)}
                             onBlur={handlePriceBlur}
-                            className="pl-9 h-10"
+                            className="pl-9 h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                             placeholder="0.00"
                           />
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm">Currency</Label>
+                        <Label className="text-sm text-[#1E3A8A]">Currency</Label>
                         <Select value={form.currency} onValueChange={(v) => setForm(f => ({ ...f, currency: v }))}>
-                          <SelectTrigger className="h-10">
+                          <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1471,20 +1586,20 @@ export default function EventTypes() {
               {/* Appearance */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">3</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs">3</span>
                   Appearance & Status
                 </h3>
                 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm">Color theme</Label>
+                    <Label className="text-sm text-[#1E3A8A]">Color theme</Label>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_OPTIONS.map(c => (
                         <button
                           key={c.value}
                           className={cn(
                             "h-8 w-8 rounded-full transition-all hover:scale-110",
-                            form.color === c.value && "ring-2 ring-primary ring-offset-2"
+                            form.color === c.value && "ring-2 ring-[#1E3A8A] ring-offset-2"
                           )}
                           style={{ backgroundColor: c.value }}
                           onClick={() => setForm(f => ({ ...f, color: c.value }))}
@@ -1495,15 +1610,15 @@ export default function EventTypes() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm">Event status</Label>
+                    <Label className="text-sm text-[#1E3A8A]">Event status</Label>
                     <div className="flex items-center gap-3 h-10 px-3 rounded-lg border">
                       <Switch 
                         checked={form.is_active} 
                         onCheckedChange={(v) => setForm(f => ({ ...f, is_active: v }))}
-                        className="data-[state=checked]:bg-primary"
+                        className="data-[state=checked]:bg-[#1E3A8A]"
                       />
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{form.is_active ? "Active" : "Inactive"}</p>
+                        <p className="text-sm font-medium text-[#1E3A8A]">{form.is_active ? "Active" : "Inactive"}</p>
                         <p className="text-xs text-muted-foreground">
                           {form.is_active 
                             ? "Guests can book this event" 
@@ -1516,11 +1631,11 @@ export default function EventTypes() {
               </div>
 
               {/* Calendar Sync Note */}
-              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
+              <div className="bg-[#1E3A8A]/5 rounded-lg p-4 border border-[#1E3A8A]/10">
                 <div className="flex items-start gap-3">
-                  <CalendarRange className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <CalendarRange className="h-5 w-5 text-[#1E3A8A] shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium mb-1">Calendar Synchronization</h4>
+                    <h4 className="text-sm font-medium text-[#1E3A8A] mb-1">Calendar Synchronization</h4>
                     <p className="text-xs text-muted-foreground">
                       When guests book this event, it will automatically appear in your Google Calendar 
                       {form.location_type === 'video' && ' with a Google Meet link generated automatically'}. 
@@ -1536,7 +1651,7 @@ export default function EventTypes() {
           <div className="border-t px-6 py-4 bg-background flex gap-3 sticky bottom-0">
             <Button 
               onClick={handleSave} 
-              className="flex-1 h-10"
+              className="flex-1 h-10 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
               {createMutation.isPending || updateMutation.isPending ? (
@@ -1548,7 +1663,7 @@ export default function EventTypes() {
                 editingId ? "Update Event" : "Create Event"
               )}
             </Button>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-6">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-6 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5">
               Cancel
             </Button>
           </div>

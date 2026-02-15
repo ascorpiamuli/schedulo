@@ -7,7 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Calendar, ArrowRight, Shield, Sparkles, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
+import { 
+  Calendar, 
+  ArrowRight, 
+  Shield, 
+  Sparkles, 
+  CheckCircle2, 
+  XCircle, 
+  Eye, 
+  EyeOff,
+  Clock,
+  CreditCard,
+  Video,
+  Zap,
+  Star,
+  Users
+} from "lucide-react";
 
 export default function Signup() {
   const [fullName, setFullName] = useState("");
@@ -146,75 +161,129 @@ export default function Signup() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side — Pasbest Talks branding */}
-      <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-12 relative overflow-hidden">
+      {/* Left side — SBPMeet branding - Smarter design */}
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-gradient-to-br from-[#1E3A8A] via-[#1E3A8A]/95 to-[#C2410C]/80 p-8 relative overflow-hidden">
         {/* Decorative elements */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-          <div className="absolute top-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-60 h-60 bg-white rounded-full blur-3xl" />
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#C2410C] rounded-full blur-3xl opacity-20" />
         </div>
+        
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="max-w-md text-white relative z-10"
+          className="max-w-md text-white relative z-10 bg-white/10 backdrop-blur-sm rounded-3xl p-10 border border-white/20 shadow-2xl"
         >
-          <div className="flex items-center gap-3 mb-8">
+          {/* Logo with animation */}
+          <motion.div 
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex items-center gap-3 mb-8"
+          >
             <div className="relative">
-              <Calendar className="h-12 w-12" />
-              <div className="absolute -top-1 -right-1 h-3 w-3 bg-white rounded-full animate-pulse" />
+              <div className="bg-gradient-to-br from-[#C2410C] to-[#C2410C]/80 p-3 rounded-2xl shadow-lg">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 h-3 w-3 bg-[#C2410C] rounded-full animate-ping" />
+              <div className="absolute -top-1 -right-1 h-3 w-3 bg-[#C2410C] rounded-full" />
             </div>
-            <span className="text-3xl font-bold bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
-              Pasbest<span className="text-white/90">Talks</span>
+            <span className="text-3xl font-bold">
+              SBP<span className="text-[#C2410C]">Meet</span>
             </span>
-          </div>
+          </motion.div>
           
-          <h1 className="text-4xl font-bold mb-4 leading-tight">
+          <h1 className="text-3xl font-bold mb-3 leading-tight">
             Start scheduling in
             <br />
-            <span className="text-white/90">minutes, for free</span>
+            <span className="text-[#C2410C]">minutes, for free</span>
           </h1>
           
-          <p className="text-lg text-white/80 mb-6">
+          <p className="text-white/80 mb-6">
             Create your free account, set your availability, and share your personal booking link with anyone.
           </p>
 
-          {/* Feature list */}
-          <div className="space-y-3">
+          {/* Stats bar */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+              <Users className="h-5 w-5 mx-auto mb-1 text-[#C2410C]" />
+              <p className="text-xs text-white/70">Active Users</p>
+              <p className="text-lg font-bold">800+</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+              <Calendar className="h-5 w-5 mx-auto mb-1 text-[#C2410C]" />
+              <p className="text-xs text-white/70">Meetings</p>
+              <p className="text-lg font-bold">1.5k+</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+              <Star className="h-5 w-5 mx-auto mb-1 text-[#C2410C]" />
+              <p className="text-xs text-white/70">Rating</p>
+              <p className="text-lg font-bold">4.9/5</p>
+            </div>
+          </div>
+
+          {/* Feature list with icons */}
+          <div className="space-y-3 mb-6">
             {[
-              "Unlimited bookings on free plan",
-              "Calendar sync with Google & Outlook",
-              "M-Pesa & Stripe payments ready",
-              "14-day Pro trial included"
+              { icon: <Zap className="h-4 w-4" />, text: "Unlimited bookings on free plan" },
+              { icon: <Clock className="h-4 w-4" />, text: "Calendar sync with Google & Outlook" },
+              { icon: <CreditCard className="h-4 w-4" />, text: "M-Pesa & Stripe payments ready" },
+              { icon: <Video className="h-4 w-4" />, text: "14-day Pro trial included" }
             ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-2 text-white/80">
-                <CheckCircle2 className="h-5 w-5 text-white/90" />
-                <span>{feature}</span>
-              </div>
+              <motion.div 
+                key={i} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
+                className="flex items-center gap-3 text-white/80 bg-white/5 rounded-lg p-2 backdrop-blur-sm"
+              >
+                <div className="text-[#C2410C]">{feature.icon}</div>
+                <span className="text-sm">{feature.text}</span>
+              </motion.div>
             ))}
           </div>
 
-          {/* Trust indicators */}
-          <div className="flex items-center gap-4 text-sm text-white/70 mt-8">
-            <div className="flex items-center gap-1">
-              <Shield className="h-4 w-4" />
+          {/* Trust indicators with badges */}
+          <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
+            <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full">
+              <Shield className="h-3.5 w-3.5 text-[#C2410C]" />
               <span>Secure</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Sparkles className="h-4 w-4" />
+            <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full">
+              <Sparkles className="h-3.5 w-3.5 text-[#C2410C]" />
               <span>No credit card</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span>⭐</span>
+            <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full">
+              <span className="text-[#C2410C]">⭐</span>
               <span>98% satisfaction</span>
             </div>
           </div>
+
+          {/* Testimonial snippet */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="mt-6 pt-4 border-t border-white/20"
+          >
+            <p className="text-xs text-white/60 italic">
+              "SBPMeet has transformed how we schedule client meetings. The M-Pesa integration is a game-changer!"
+            </p>
+            <p className="text-xs text-white/80 mt-1 font-medium">— Stephen Muli, Pasbest Ventures</p>
+          </motion.div>
         </motion.div>
       </div>
 
       {/* Right side — form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center p-8 bg-gray-50/50 dark:bg-gray-950/50">
+      <div className="flex w-full lg:w-1/2 items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -226,26 +295,28 @@ export default function Signup() {
               {/* Mobile logo */}
               <div className="flex items-center gap-2 mb-2 lg:hidden">
                 <div className="relative">
-                  <Calendar className="h-7 w-7 text-primary" />
-                  <div className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse" />
+                  <div className="bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] p-2 rounded-xl">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 h-2 w-2 bg-[#C2410C] rounded-full animate-pulse" />
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                  Pasbest<span className="text-primary">Talks</span>
+                <span className="text-xl font-bold bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent">
+                  SBPMeet
                 </span>
               </div>
               
-              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+              <CardTitle className="text-2xl font-bold text-[#1E3A8A] dark:text-white">
                 Create your account
               </CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400">
-                Get started with Pasbest Talks for free
+                Get started with SBPMeet for free
               </CardDescription>
             </CardHeader>
             
             <form onSubmit={handleSignup}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="fullName" className="text-[#1E3A8A] dark:text-gray-300">
                     Full name
                   </Label>
                   <Input
@@ -254,12 +325,12 @@ export default function Signup() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
-                    className="h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                    className="h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A]"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="email" className="text-[#1E3A8A] dark:text-gray-300">
                     Email
                   </Label>
                   <Input
@@ -269,12 +340,12 @@ export default function Signup() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                    className="h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A]"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="password" className="text-[#1E3A8A] dark:text-gray-300">
                     Password
                   </Label>
                   <div className="relative">
@@ -286,14 +357,14 @@ export default function Signup() {
                       onChange={handlePasswordChange}
                       required
                       minLength={6}
-                      className={`h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-primary/50 focus:border-primary pr-10 ${
+                      className={`h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] pr-10 ${
                         passwordError ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' : ''
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1E3A8A] dark:text-gray-400 dark:hover:text-[#C2410C] transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -307,7 +378,7 @@ export default function Signup() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="confirmPassword" className="text-[#1E3A8A] dark:text-gray-300">
                     Confirm password
                   </Label>
                   <div className="relative">
@@ -318,14 +389,14 @@ export default function Signup() {
                       value={confirmPassword}
                       onChange={handleConfirmPasswordChange}
                       required
-                      className={`h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-primary/50 focus:border-primary pr-10 ${
+                      className={`h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] pr-10 ${
                         confirmPasswordError ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' : ''
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1E3A8A] dark:text-gray-400 dark:hover:text-[#C2410C] transition-colors"
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -344,8 +415,8 @@ export default function Signup() {
                     <div className="flex items-center gap-2">
                       <div className={`h-1.5 w-full rounded-full ${
                         password.length >= 12 ? 'bg-green-500' : 
-                        password.length >= 8 ? 'bg-yellow-500' : 
-                        'bg-orange-500'
+                        password.length >= 8 ? 'bg-[#C2410C]' : 
+                        'bg-[#1E3A8A]'
                       }`} />
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -360,7 +431,7 @@ export default function Signup() {
               <CardFooter className="flex flex-col gap-4">
                 <Button 
                   type="submit" 
-                  className="w-full gap-2 h-11 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25" 
+                  className="w-full gap-2 h-11 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white shadow-lg shadow-[#1E3A8A]/25" 
                   size="lg" 
                   disabled={
                     loading || 
@@ -387,7 +458,7 @@ export default function Signup() {
                   )}
                 </Button>
 
-                {/* OAuth Placeholder - To be implemented dynamically later */}
+                {/* OAuth Placeholder */}
                 <div className="relative my-2">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
@@ -439,31 +510,31 @@ export default function Signup() {
 
                 <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
                   Already have an account?{" "}
-                  <Link to="/login" className="text-primary font-medium hover:text-primary/80 hover:underline transition-colors">
+                  <Link to="/login" className="text-[#1E3A8A] font-medium hover:text-[#C2410C] hover:underline transition-colors">
                     Sign in
                   </Link>
                 </p>
 
                 <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
                   By signing up, you agree to our{" "}
-                  <a href="/terms" className="hover:text-primary transition-colors">Terms</a>{" "}
+                  <a href="/terms" className="hover:text-[#C2410C] transition-colors">Terms</a>{" "}
                   and{" "}
-                  <a href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</a>
+                  <a href="/privacy" className="hover:text-[#C2410C] transition-colors">Privacy Policy</a>
                 </p>
               </CardFooter>
             </form>
           </Card>
 
-          {/* Pasbest Ventures attribution */}
+          {/* SBP Group attribution */}
           <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-8">
             A product of{" "}
             <a 
-              href="https://pasbestventures.com" 
+              href="https://sbpgroup.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:text-primary transition-colors font-medium"
+              className="hover:text-[#C2410C] transition-colors font-medium"
             >
-              Pasbest Ventures Limited
+              Pasbest Ventures
             </a>
           </p>
         </motion.div>

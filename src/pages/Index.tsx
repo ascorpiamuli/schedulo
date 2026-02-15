@@ -48,42 +48,43 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster, toast } from "sonner";
 
+// Color scheme: Primary Dark Blue (#1E3A8A), Secondary Orange Dark (#C2410C)
 const features = [
   { 
     icon: CalendarCheck, 
     title: "One-click scheduling", 
     description: "Share your link and let clients book instantly. No more back-and-forth emails.",
-    gradient: "from-violet-500 to-purple-500"
+    gradient: "from-[#1E3A8A] to-[#C2410C]"
   },
   { 
     icon: RefreshCw, 
     title: "Two-way sync", 
     description: "Google Calendar, iCloud, Outlook - we keep everything in sync automatically.",
-    gradient: "from-blue-500 to-cyan-500"
+    gradient: "from-[#1E3A8A] to-[#C2410C]"
   },
   { 
     icon: Users, 
     title: "Team availability", 
     description: "See when your whole team is free and route leads to the right person.",
-    gradient: "from-emerald-500 to-teal-500"
+    gradient: "from-[#1E3A8A] to-[#C2410C]"
   },
   { 
     icon: DollarSign, 
     title: "Collect payments", 
     description: "Stripe & M-Pesa integration for paid bookings, deposits, and subscriptions.",
-    gradient: "from-amber-500 to-orange-500"
+    gradient: "from-[#1E3A8A] to-[#C2410C]"
   },
   { 
     icon: BarChart, 
     title: "Insights & analytics", 
     description: "Understand your booking patterns and no-show rates with detailed reports.",
-    gradient: "from-pink-500 to-rose-500"
+    gradient: "from-[#1E3A8A] to-[#C2410C]"
   },
   { 
     icon: Globe, 
     title: "Timezone intelligence", 
     description: "Automatic timezone detection so you never get the time wrong.",
-    gradient: "from-indigo-500 to-blue-500"
+    gradient: "from-[#1E3A8A] to-[#C2410C]"
   },
 ];
 
@@ -98,7 +99,7 @@ const testimonials = [
   { 
     name: "Stephen Muli", 
     role: "Software Developer", 
-    company: "Pasbest Ventures",
+    company: "Pasbest Ventures Limited",
     text: "We've cut scheduling time by 80% and increased meeting show-rates by 25%. The M-Pesa integration was seamless.", 
     rating: 5,
     image: "SM"
@@ -106,7 +107,7 @@ const testimonials = [
   { 
     name: "Benedict Musyoki", 
     role: "Chief Technology Officer", 
-    company: "Pasbest Ventures",
+    company: "Pasbest Ventures Limited",
     text: "My clients love how easy it is to book and pay. I've saved 5+ hours weekly that I now dedicate to patient care.", 
     rating: 5,
     image: "BM"
@@ -114,8 +115,8 @@ const testimonials = [
   { 
     name: "Pascal Ngathike", 
     role: "Director of Operations", 
-    company: "Aldapas Limited",
-    text: "From solo consultant to 12-person team, Pasbest Talks has scaled perfectly with us. Round-robin is a lifesaver.", 
+    company: "Pasbest Ventures Limited",
+    text: "From solo consultant to 12-person team, SBPMeet has scaled perfectly with us. Round-robin is a lifesaver.", 
     rating: 5,
     image: "PN"
   },
@@ -124,11 +125,11 @@ const testimonials = [
 // FAQ Data
 const faqs = [
   {
-    question: "How does Pasbest Talks handle payments?",
+    question: "How does SBPMeet handle payments?",
     answer: "We integrate with Stripe and M-Pesa for seamless payment processing. You can collect deposits, full payments, or set up subscriptions for your services."
   },
   {
-    question: "Can I use Pasbest Talks with my existing calendar?",
+    question: "Can I use SBPMeet with my existing calendar?",
     answer: "Yes! We sync two-way with Google Calendar, iCloud, Outlook, and more. Your calendar stays updated automatically."
   },
   {
@@ -140,11 +141,11 @@ const faqs = [
     answer: "You can set cancellation policies, require deposits, and we'll send automated reminders to reduce no-shows by up to 80%."
   },
   {
-    question: "Can my team use Pasbest Talks?",
+    question: "Can my team use SBPMeet?",
     answer: "Absolutely! Our Team plan includes round-robin routing, team availability, and unified scheduling for up to 12 team members."
   },
   {
-    question: "Is Pasbest Talks secure?",
+    question: "Is SBPMeet secure?",
     answer: "Yes, we're GDPR compliant and use enterprise-grade encryption. Your data is always protected."
   }
 ];
@@ -158,8 +159,8 @@ const nationalHolidays = [
     title: 'New Year\'s Day',
     start: '2025-01-01',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -168,8 +169,8 @@ const nationalHolidays = [
     title: 'Good Friday',
     start: '2025-04-18',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -178,8 +179,8 @@ const nationalHolidays = [
     title: 'Easter Monday',
     start: '2025-04-21',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -188,8 +189,8 @@ const nationalHolidays = [
     title: 'Labour Day',
     start: '2025-05-01',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -198,8 +199,8 @@ const nationalHolidays = [
     title: 'Madaraka Day',
     start: '2025-06-01',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -208,8 +209,8 @@ const nationalHolidays = [
     title: 'Mashujaa Day',
     start: '2025-10-20',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -218,8 +219,8 @@ const nationalHolidays = [
     title: 'Jamhuri Day',
     start: '2025-12-12',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -228,8 +229,8 @@ const nationalHolidays = [
     title: 'Christmas Day',
     start: '2025-12-25',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -238,8 +239,8 @@ const nationalHolidays = [
     title: 'Boxing Day',
     start: '2025-12-26',
     allDay: true,
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     textColor: '#FFFFFF',
     display: 'background',
     classNames: ['holiday-event']
@@ -252,8 +253,8 @@ const calendarEvents = [
     title: '💰 Strategy Call',
     start: '2025-01-20T10:00:00',
     end: '2025-01-20T10:30:00',
-    backgroundColor: '#8B5CF6',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#1E3A8A',
+    borderColor: '#1E3A8A',
     extendedProps: {
       type: 'paid',
       amount: '$120',
@@ -264,8 +265,8 @@ const calendarEvents = [
     title: '🎥 Product Demo',
     start: '2025-01-20T14:00:00',
     end: '2025-01-20T14:45:00',
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     extendedProps: {
       type: 'free',
       amount: 'Free',
@@ -276,8 +277,8 @@ const calendarEvents = [
     title: '💰 Consultation',
     start: '2025-01-21T09:30:00',
     end: '2025-01-21T10:30:00',
-    backgroundColor: '#8B5CF6',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#1E3A8A',
+    borderColor: '#1E3A8A',
     extendedProps: {
       type: 'paid',
       amount: '$150',
@@ -288,8 +289,8 @@ const calendarEvents = [
     title: '🎥 Team Meeting',
     start: '2025-01-22T11:00:00',
     end: '2025-01-22T12:00:00',
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: '#C2410C',
+    borderColor: '#C2410C',
     extendedProps: {
       type: 'free',
       amount: 'Free',
@@ -300,8 +301,8 @@ const calendarEvents = [
     title: '💰 Client Workshop',
     start: '2025-01-23T13:00:00',
     end: '2025-01-23T15:00:00',
-    backgroundColor: '#8B5CF6',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#1E3A8A',
+    borderColor: '#1E3A8A',
     extendedProps: {
       type: 'paid',
       amount: '$300',
@@ -312,14 +313,14 @@ const calendarEvents = [
 ];
 
 const integrations = [
-  { name: "Google Calendar", icon: Calendar, color: "text-blue-500" },
-  { name: "Stripe", icon: CreditCard, color: "text-purple-500" },
-  { name: "Zoom", icon: Video, color: "text-blue-600" },
-  { name: "M-Pesa", icon: Smartphone, color: "text-green-600" },
-  { name: "Outlook", icon: Mail, color: "text-blue-400" },
-  { name: "Slack", icon: Bot, color: "text-red-500" },
-  { name: "Salesforce", icon: TrendingUp, color: "text-blue-700" },
-  { name: "HubSpot", icon: Award, color: "text-orange-500" }
+  { name: "Google Calendar", icon: Calendar, color: "text-[#1E3A8A]" },
+  { name: "Stripe", icon: CreditCard, color: "text-[#C2410C]" },
+  { name: "Zoom", icon: Video, color: "text-[#1E3A8A]" },
+  { name: "M-Pesa", icon: Smartphone, color: "text-[#C2410C]" },
+  { name: "Outlook", icon: Mail, color: "text-[#1E3A8A]" },
+  { name: "Slack", icon: Bot, color: "text-[#C2410C]" },
+  { name: "Salesforce", icon: TrendingUp, color: "text-[#1E3A8A]" },
+  { name: "HubSpot", icon: Award, color: "text-[#C2410C]" }
 ];
 
 // Partner logos
@@ -368,7 +369,7 @@ export default function Index() {
       setIsDemoRequest(true);
       setFormData(prev => ({
         ...prev,
-        message: "I would like to request a product demo. Please show me how Pasbest Talks works for scheduling and payments."
+        message: "I would like to request a product demo. Please show me how SBPMeet works for scheduling and payments."
       }));
       // Clear the flag after setting
       sessionStorage.removeItem('demoRequest');
@@ -487,7 +488,7 @@ export default function Index() {
     setIsDemoRequest(true);
     setFormData(prev => ({
       ...prev,
-      message: "I would like to request a product demo. Please show me how Pasbest Talks works for scheduling and payments."
+      message: "I would like to request a product demo. Please show me how SBPMeet works for scheduling and payments."
     }));
     
     // Show a toast notification
@@ -521,7 +522,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <Toaster richColors position="top-right" />
+  
       
       {/* Header */}
       <motion.header 
@@ -536,15 +537,15 @@ export default function Index() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Logo */}
+            {/* Logo - Updated to SBPMeet */}
             <div className="flex items-center flex-shrink-0">
               <Link to="/" className="flex items-center gap-2">
                 <div className="relative">
-                  <Calendar className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                  <div className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse" />
+                  <Calendar className="h-5 w-5 md:h-6 md:w-6 text-[#1E3A8A]" />
+                  <div className="absolute -top-1 -right-1 h-2 w-2 bg-[#C2410C] rounded-full animate-pulse" />
                 </div>
-                <span className="font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent text-base md:text-lg">
-                  Pasbest<span className="text-primary">Talks</span>
+                <span className="font-semibold bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent text-base md:text-lg">
+                  SBPMeet
                 </span>
               </Link>
             </div>
@@ -556,7 +557,7 @@ export default function Index() {
                   <a
                     key={item}
                     href={`#${item.toLowerCase()}`}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-[#1E3A8A] dark:hover:text-[#1E3A8A] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
                   >
                     {item}
                   </a>
@@ -568,14 +569,14 @@ export default function Index() {
             <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
               <Link 
                 to="/login" 
-                className="hidden md:inline-flex px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
+                className="hidden md:inline-flex px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-[#1E3A8A] dark:hover:text-[#1E3A8A] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
               >
                 Sign in
               </Link>
               
               <Link
                 to="/signup"
-                className="hidden md:inline-flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-full shadow-lg hover:shadow-xl shadow-primary/25 transition-all"
+                className="hidden md:inline-flex items-center gap-1.5 px-5 py-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white text-sm font-medium rounded-full shadow-lg hover:shadow-xl shadow-[#1E3A8A]/25 transition-all"
               >
                 Get started
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -604,7 +605,7 @@ export default function Index() {
                     key={item}
                     href={`#${item.toLowerCase()}`}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-[#1E3A8A] dark:hover:text-[#1E3A8A] hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
                     {item}
                   </a>
@@ -613,14 +614,14 @@ export default function Index() {
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className="block px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-[#1E3A8A] dark:hover:text-[#1E3A8A] hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
                     Sign in
                   </Link>
                   <Link
                     to="/signup"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 mt-1 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors text-center"
+                    className="block px-4 py-3 mt-1 text-sm font-medium text-white bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-lg transition-colors text-center"
                   >
                     Get started
                   </Link>
@@ -631,161 +632,159 @@ export default function Index() {
         </div>
       </motion.header>
 
-{/* Hero Section - Fixed Clickability + Improved Feature Panel */}
-<section className="relative pt-24 lg:pt-28 mb-12 overflow-hidden">
+      {/* Hero Section */}
+      <section className="relative pt-24 lg:pt-28 mb-12 overflow-hidden">
+        {/* Background gradients with updated colors */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#1E3A8A]/5 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#C2410C]/5 to-transparent" />
 
-  {/* FIX: Background gradients must NOT block clicks */}
-  <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-  <div className="pointer-events-none absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent" />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
 
-  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-
-      {/* Left Column */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-20"
-      >
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-2 rounded-full mb-6 border border-primary/20">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-primary">Trusted by 100+ professionals</span>
-        </div>
-        
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-          <span className="bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-            Schedule smarter,
-          </span>
-          <br />
-          <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            get paid faster
-          </span>
-        </h1>
-        
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-lg">
-          Eliminate the back-and-forth. Share your link, accept payments, 
-          and fill your calendar automatically.
-        </p>
-
-        {/* Clickable CTA Buttons - FIXED */}
-        <div className="flex flex-wrap gap-4 mb-8 relative z-30">
-          <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-white h-12 px-8 shadow-lg group">
-            <Link to="/signup">
-              Start free trial
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </Button>
-
-          <Button 
-            size="lg" 
-            variant="outline" 
-            onClick={handleDemoRequest}
-            className="border-2 border-gray-300 dark:border-gray-700  dark:hover:bg-gray-800 h-12 px-8"
-          >
-            <Video className="mr-2 h-4 w-4" />
-            View Demo
-          </Button>
-        </div>
-
-        {/* Social Proof */}
-        <div className="flex items-center gap-6 relative z-20">
-          <div className="flex -space-x-3">
-            {['JD', 'SK', 'MP', 'AT'].map((initial, i) => (
-              <div
-                key={i}
-                className={`h-10 w-10 rounded-full bg-${['blue', 'green', 'purple', 'amber'][i]}-500 border-2 border-white dark:border-gray-950 flex items-center justify-center text-xs font-medium text-white shadow-lg`}
-              >
-                {initial}
+            {/* Left Column */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="relative z-20"
+            >
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#1E3A8A]/10 to-[#C2410C]/5 px-4 py-2 rounded-full mb-6 border border-[#1E3A8A]/20">
+                <Sparkles className="h-4 w-4 text-[#1E3A8A]" />
+                <span className="text-sm font-medium text-[#1E3A8A]">Trusted by 100+ professionals</span>
               </div>
-            ))}
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+                <span className="bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent">
+                  Schedule smarter,
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-[#C2410C] to-[#C2410C]/70 bg-clip-text text-transparent">
+                  get paid faster
+                </span>
+              </h1>
+              
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-lg">
+                Eliminate the back-and-forth. Share your link, accept payments, 
+                and fill your calendar automatically.
+              </p>
+
+              {/* Clickable CTA Buttons */}
+              <div className="flex flex-wrap gap-4 mb-8 relative z-30">
+                <Button size="lg" asChild className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white h-12 px-8 shadow-lg group">
+                  <Link to="/signup">
+                    Start free trial
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </Button>
+
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  onClick={handleDemoRequest}
+                  className="border-2 border-[#C2410C] text-[#C2410C] hover:bg-[#C2410C] hover:text-white h-12 px-8"
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  View Demo
+                </Button>
+              </div>
+
+              {/* Social Proof */}
+              <div className="flex items-center gap-6 relative z-20">
+                <div className="flex -space-x-3">
+                  {['JD', 'SK', 'MP', 'AT'].map((initial, i) => (
+                    <div
+                      key={i}
+                      className={`h-10 w-10 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] border-2 border-white dark:border-gray-950 flex items-center justify-center text-xs font-medium text-white shadow-lg`}
+                    >
+                      {initial}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    {[1,2,3,4,5].map((i) => (
+                      <Star key={i} className="h-4 w-4 fill-[#C2410C] text-[#C2410C]" />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="font-semibold text-gray-900 dark:text-white">20+</span> professionals
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column – Feature Highlight Panel */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative z-20"
+            >
+              <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200/60 dark:border-gray-800/60 p-8 backdrop-blur-sm space-y-8">
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold tracking-tight text-[#1E3A8A] dark:text-white">
+                  Everything you need to run your business
+                </h3>
+
+                {/* Features */}
+                <div className="space-y-6">
+
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-[#1E3A8A]/10 text-[#1E3A8A]">
+                      <CalendarDays className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#1E3A8A]">Smart online scheduling</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Clients book themselves into your calendar automatically.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-[#C2410C]/10 text-[#C2410C]">
+                      <CreditCard className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#C2410C]">Frictionless payments</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Get paid upfront or after the session—no more chasing invoices.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-[#1E3A8A]/10 text-[#1E3A8A]">
+                      <MessageSquare className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#1E3A8A]">Automated reminders</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Reduce no-shows with email & SMS reminders sent automatically.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-[#C2410C]/10 text-[#C2410C]">
+                      <BarChart3 className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#C2410C]">Insights & analytics</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Track growth, revenue, and appointment trends in real time.
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </motion.div>
+
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1">
-              {[1,2,3,4,5].map((i) => (
-                <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              ))}
-            </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-semibold text-gray-900 dark:text-white">20+</span> professionals
-            </span>
-          </div>
         </div>
-      </motion.div>
-
-      {/* Right Column – REPLACED (Feature Highlight Panel) */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        className="relative z-20"
-      >
-        <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200/60 dark:border-gray-800/60 p-8 backdrop-blur-sm space-y-8">
-
-          {/* Title */}
-          <h3 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Everything you need to run your business
-          </h3>
-
-          {/* Features */}
-          <div className="space-y-6">
-
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                <CalendarDays className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold">Smart online scheduling</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Clients book themselves into your calendar automatically.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-                <CreditCard className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold">Frictionless payments</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Get paid upfront or after the session—no more chasing invoices.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                <MessageSquare className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold">Automated reminders</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Reduce no-shows with email & SMS reminders sent automatically.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                <BarChart3 className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold">Insights & analytics</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Track growth, revenue, and appointment trends in real time.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </motion.div>
-
-    </div>
-  </div>
-</section>
-
+      </section>
 
       {/* Stats Bar */}
       <section className="py-12 border-y border-gray-200 dark:border-gray-800">
@@ -800,10 +799,10 @@ export default function Index() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="text-center group"
               >
-                <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 group-hover:scale-110 transition-transform mb-3">
-                  <stat.icon className="h-5 w-5 text-primary" />
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-[#1E3A8A]/10 to-[#C2410C]/5 group-hover:scale-110 transition-transform mb-3">
+                  <stat.icon className="h-5 w-5 text-[#1E3A8A]" />
                 </div>
-                <p className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-1">
+                <p className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent mb-1">
                   {stat.value}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
@@ -822,10 +821,10 @@ export default function Index() {
             viewport={{ once: true }}
             className="text-center mb-10"
           >
-            <p className="text-sm font-medium text-primary uppercase tracking-wider mb-2">
+            <p className="text-sm font-medium text-[#1E3A8A] uppercase tracking-wider mb-2">
               Trusted by leading companies
             </p>
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-2xl lg:text-3xl font-bold text-[#1E3A8A] dark:text-white">
               Join 10,000+ businesses worldwide
             </h2>
           </motion.div>
@@ -845,7 +844,7 @@ export default function Index() {
                     <div className="h-10 w-10 flex items-center justify-center">
                       <img src={logo.logo} alt={logo.name} className="max-h-8 max-w-8 object-contain grayscale hover:grayscale-0 transition-all duration-300" />
                     </div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{logo.name}</span>
+                    <span className="text-sm font-medium text-[#1E3A8A] dark:text-gray-300">{logo.name}</span>
                   </div>
                 ))}
               </motion.div>
@@ -863,11 +862,11 @@ export default function Index() {
             viewport={{ once: true }}
             className="text-center max-w-3xl mx-auto mb-16"
           >
-            <div className="inline-flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full mb-4">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Powerful features</span>
+            <div className="inline-flex items-center gap-2 bg-[#1E3A8A]/5 px-4 py-2 rounded-full mb-4">
+              <Zap className="h-4 w-4 text-[#1E3A8A]" />
+              <span className="text-sm font-medium text-[#1E3A8A]">Powerful features</span>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#1E3A8A] dark:text-white mb-4">
               Everything you need to run your business
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -884,14 +883,14 @@ export default function Index() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ y: -4 }}
-                className="group relative bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 hover:border-primary/30 hover:shadow-lg transition-all"
+                className="group relative bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 hover:border-[#1E3A8A]/30 hover:shadow-lg transition-all"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-xl transition-opacity`} />
                 <div className="relative">
-                  <div className="h-11 w-11 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <feature.icon className="h-5 w-5 text-primary" />
+                  <div className="h-11 w-11 rounded-lg bg-gradient-to-br from-[#1E3A8A]/10 to-[#C2410C]/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <feature.icon className="h-5 w-5 text-[#1E3A8A]" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                  <h3 className="text-lg font-semibold text-[#1E3A8A] dark:text-white mb-2">{feature.title}</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{feature.description}</p>
                 </div>
               </motion.div>
@@ -909,11 +908,11 @@ export default function Index() {
             viewport={{ once: true }}
             className="text-center max-w-3xl mx-auto mb-16"
           >
-            <div className="inline-flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full mb-4">
-              <HeartHandshake className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Trusted by professionals</span>
+            <div className="inline-flex items-center gap-2 bg-[#1E3A8A]/5 px-4 py-2 rounded-full mb-4">
+              <HeartHandshake className="h-4 w-4 text-[#1E3A8A]" />
+              <span className="text-sm font-medium text-[#1E3A8A]">Trusted by professionals</span>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#1E3A8A] dark:text-white mb-4">
               Loved by thousands of businesses
             </h2>
           </motion.div>
@@ -927,20 +926,20 @@ export default function Index() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 whileHover={{ y: -4 }}
-                className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 hover:border-primary/30 hover:shadow-lg transition-all"
+                className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 hover:border-[#1E3A8A]/30 hover:shadow-lg transition-all"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-11 w-11 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary font-semibold">
+                  <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#1E3A8A]/20 to-[#C2410C]/10 flex items-center justify-center text-[#1E3A8A] font-semibold">
                     {testimonial.image}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</p>
+                    <p className="font-semibold text-[#1E3A8A] dark:text-white">{testimonial.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.role}, {testimonial.company}</p>
                   </div>
                 </div>
                 <div className="flex gap-1 mb-3">
                   {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <Star key={i} className="h-4 w-4 fill-[#C2410C] text-[#C2410C]" />
                   ))}
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">"{testimonial.text}"</p>
@@ -959,15 +958,15 @@ export default function Index() {
             viewport={{ once: true }}
             className="text-center max-w-3xl mx-auto mb-16"
           >
-            <div className="inline-flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full mb-4">
-              <HelpCircle className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Got questions?</span>
+            <div className="inline-flex items-center gap-2 bg-[#1E3A8A]/5 px-4 py-2 rounded-full mb-4">
+              <HelpCircle className="h-4 w-4 text-[#1E3A8A]" />
+              <span className="text-sm font-medium text-[#1E3A8A]">Got questions?</span>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#1E3A8A] dark:text-white mb-4">
               Frequently Asked Questions
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              Everything you need to know about Pasbest Talks
+              Everything you need to know about SBPMeet
             </p>
           </motion.div>
 
@@ -985,8 +984,8 @@ export default function Index() {
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
-                  <span className="font-semibold text-gray-900 dark:text-white">{faq.question}</span>
-                  <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
+                  <span className="font-semibold text-[#1E3A8A] dark:text-white">{faq.question}</span>
+                  <ChevronDown className={`h-5 w-5 text-[#C2410C] transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
                 </button>
                 <div className={`px-6 overflow-hidden transition-all duration-300 ${openFaq === index ? 'pb-4' : 'max-h-0'}`}>
                   <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
@@ -998,7 +997,7 @@ export default function Index() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 lg:py-24 relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+      <section className="py-20 lg:py-24 relative overflow-hidden bg-gradient-to-br from-[#1E3A8A]/10 via-[#C2410C]/5 to-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1007,11 +1006,11 @@ export default function Index() {
             className="text-center max-w-4xl mx-auto"
           >
             <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent">
                 Ready to save 10+ hours
               </span>
               <br />
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#C2410C] to-[#C2410C]/70 bg-clip-text text-transparent">
                 every week?
               </span>
             </h2>
@@ -1022,7 +1021,7 @@ export default function Index() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-white h-12 px-8 shadow-2xl shadow-primary/30 group">
+              <Button size="lg" asChild className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white h-12 px-8 shadow-2xl shadow-[#1E3A8A]/30 group">
                 <Link to="/signup">
                   Start your free 14-day trial
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -1032,7 +1031,7 @@ export default function Index() {
                 size="lg" 
                 variant="outline" 
                 onClick={handleContactSales}
-                className="border-2 border-gray-300 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 h-12 px-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm"
+                className="border-2 border-[#C2410C] text-[#C2410C] hover:bg-[#C2410C] hover:text-white h-12 px-8 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm"
               >
                 <Headphones className="mr-2 h-4 w-4" />
                 Contact sales
@@ -1042,7 +1041,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Contact Form Section - UPDATED with edge function integration */}
+      {/* Contact Form Section */}
       <section id="contact" className="py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50/50 dark:from-gray-950 dark:to-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -1051,11 +1050,11 @@ export default function Index() {
             viewport={{ once: true }}
             className="text-center max-w-3xl mx-auto mb-16"
           >
-            <div className="inline-flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full mb-4">
-              <MessageSquare className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Get in touch</span>
+            <div className="inline-flex items-center gap-2 bg-[#1E3A8A]/5 px-4 py-2 rounded-full mb-4">
+              <MessageSquare className="h-4 w-4 text-[#1E3A8A]" />
+              <span className="text-sm font-medium text-[#1E3A8A]">Get in touch</span>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#1E3A8A] dark:text-white mb-4">
               Have questions? We're here to help
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -1064,7 +1063,7 @@ export default function Index() {
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
-            {/* Contact Form - Updated with edge function integration */}
+            {/* Contact Form */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -1073,8 +1072,8 @@ export default function Index() {
               className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-gray-800"
             >
               {isDemoRequest && (
-                <div className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
-                  <p className="text-sm text-primary font-medium flex items-center gap-2">
+                <div className="mb-6 p-4 bg-[#1E3A8A]/10 border border-[#C2410C]/30 rounded-lg">
+                  <p className="text-sm text-[#1E3A8A] font-medium flex items-center gap-2">
                     <Video className="h-4 w-4" />
                     Demo Request
                   </p>
@@ -1086,7 +1085,7 @@ export default function Index() {
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-[#1E3A8A] dark:text-gray-300 mb-2">
                     Full Name *
                   </label>
                   <input
@@ -1096,13 +1095,13 @@ export default function Index() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] transition-colors"
                     placeholder="John Doe"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-[#1E3A8A] dark:text-gray-300 mb-2">
                     Email Address *
                   </label>
                   <input
@@ -1112,13 +1111,13 @@ export default function Index() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] transition-colors"
                     placeholder="john@company.com"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="company" className="block text-sm font-medium text-[#1E3A8A] dark:text-gray-300 mb-2">
                     Company Name
                   </label>
                   <input
@@ -1127,13 +1126,13 @@ export default function Index() {
                     name="company"
                     value={formData.company}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] transition-colors"
                     placeholder="Your Company Ltd"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="message" className="block text-sm font-medium text-[#1E3A8A] dark:text-gray-300 mb-2">
                     Message *
                   </label>
                   <textarea
@@ -1144,7 +1143,7 @@ export default function Index() {
                     required
                     readOnly={isDemoRequest}
                     rows={4}
-                    className={`w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none ${isDemoRequest ? 'bg-gray-50 dark:bg-gray-700 cursor-not-allowed' : ''}`}
+                    className={`w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] transition-colors resize-none ${isDemoRequest ? 'bg-gray-50 dark:bg-gray-700 cursor-not-allowed' : ''}`}
                     placeholder="Tell us how we can help..."
                   />
                   {isDemoRequest && (
@@ -1157,7 +1156,7 @@ export default function Index() {
                 <Button
                   type="submit"
                   disabled={formStatus === 'submitting'}
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-white text-base font-medium rounded-lg shadow-lg shadow-primary/25 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full h-12 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white text-base font-medium rounded-lg shadow-lg shadow-[#1E3A8A]/25 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {formStatus === 'submitting' ? (
                     <span className="flex items-center gap-2">
@@ -1192,39 +1191,39 @@ export default function Index() {
             >
               <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-primary" />
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#1E3A8A]/20 to-[#C2410C]/10 flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-[#1E3A8A]" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Pasbest Ventures Limited</h3>
+                    <h3 className="text-xl font-semibold text-[#1E3A8A] dark:text-white">Pasbest Ventures Limited</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Parent Company</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <MapPin className="h-5 w-5 text-[#1E3A8A] shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Headquarters</p>
+                      <p className="text-sm font-medium text-[#1E3A8A] dark:text-gray-300">Headquarters</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Nairobi, Kenya</p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <Mail className="h-5 w-5 text-[#1E3A8A] shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</p>
-                      <a href="mailto:info@pasbestventures.com" className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
-                        info@pasbestventures.com
+                      <p className="text-sm font-medium text-[#1E3A8A] dark:text-gray-300">Email</p>
+                      <a href="mailto:info@sbpgroup.com" className="text-sm text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">
+                        info@sbpgroup.com
                       </a>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <Phone className="h-5 w-5 text-[#1E3A8A] shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</p>
-                      <a href="tel:+254727200002" className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
+                      <p className="text-sm font-medium text-[#1E3A8A] dark:text-gray-300">Phone</p>
+                      <a href="tel:+254727200002" className="text-sm text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">
                         +254 727 200002
                       </a>
                     </div>
@@ -1233,35 +1232,35 @@ export default function Index() {
 
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    <span className="font-semibold text-gray-900 dark:text-white">Pasbest Talks</span> is a product of Pasbest Ventures Limited, 
+                    <span className="font-semibold text-[#1E3A8A] dark:text-white">SBPMeet</span> is a product of Pasbest Ventures Limited, 
                     dedicated to providing modern scheduling solutions for professionals worldwide.
                   </p>
                   <a 
                     href="https://pasbestventures.com" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[#1E3A8A] hover:text-[#C2410C] transition-colors"
                   >
-                    Visit pasbestventures.com
+                    Visit Pasbest Ventures Official Website
                     <ArrowRight className="h-4 w-4" />
                   </a>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-gray-800">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Support Hours</h3>
+                <h3 className="text-lg font-semibold text-[#1E3A8A] dark:text-white mb-4">Support Hours</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Monday - Friday</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">8:00 AM - 6:00 PM EAT</span>
+                    <span className="text-sm font-medium text-[#1E3A8A] dark:text-white">8:00 AM - 6:00 PM EAT</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Saturday</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">9:00 AM - 2:00 PM EAT</span>
+                    <span className="text-sm font-medium text-[#1E3A8A] dark:text-white">9:00 AM - 2:00 PM EAT</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Sunday</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">Closed</span>
+                    <span className="text-sm font-medium text-[#1E3A8A] dark:text-white">Closed</span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-4">
@@ -1281,9 +1280,9 @@ export default function Index() {
             {/* Company Info */}
             <div className="col-span-2 md:col-span-1 lg:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <Calendar className="h-6 w-6 text-primary" />
-                <span className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                  Pasbest<span className="text-primary">Talks</span>
+                <Calendar className="h-6 w-6 text-[#1E3A8A]" />
+                <span className="text-xl font-semibold bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent">
+                  SBPMeet
                 </span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs leading-relaxed mb-4">
@@ -1291,13 +1290,13 @@ export default function Index() {
                 based in Nairobi, serving the world.
               </p>
               <div className="flex gap-4 mt-4">
-                <a href="https://twitter.com/pasbestventures" target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                <a href="https://twitter.com/sbpgroup" target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-[#1E3A8A] hover:text-white transition-colors">
                   <Twitter className="h-4 w-4" />
                 </a>
-                <a href="https://linkedin.com/company/pasbestventures" target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                <a href="https://linkedin.com/company/sbpgroup" target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-[#1E3A8A] hover:text-white transition-colors">
                   <Linkedin className="h-4 w-4" />
                 </a>
-                <a href="https://instagram.com/pasbestventures" target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                <a href="https://instagram.com/sbpgroup" target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-[#1E3A8A] hover:text-white transition-colors">
                   <Instagram className="h-4 w-4" />
                 </a>
               </div>
@@ -1305,32 +1304,32 @@ export default function Index() {
             
             {/* Product Links */}
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-4">Product</h4>
+              <h4 className="font-semibold text-[#1E3A8A] dark:text-white text-sm mb-4">Product</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#features" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Features</a></li>
-                <li><a href="#testimonials" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Testimonials</a></li>
-                <li><a href="#faq" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">FAQ</a></li>
-                <li><a href="#contact" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Contact</a></li>
+                <li><a href="#features" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Features</a></li>
+                <li><a href="#testimonials" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Testimonials</a></li>
+                <li><a href="#faq" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">FAQ</a></li>
+                <li><a href="#contact" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Contact</a></li>
               </ul>
             </div>
             
             {/* Company Links */}
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-4">Company</h4>
+              <h4 className="font-semibold text-[#1E3A8A] dark:text-white text-sm mb-4">Company</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="https://pasbestventures.com/about" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">About Us</a></li>
-                <li><a href="https://pasbestventures.com/careers" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Careers</a></li>
-                <li><a href="https://pasbestventures.com/blog" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Blog</a></li>
+                <li><a href="https://sbpgroup.com/about" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">About Us</a></li>
+                <li><a href="https://sbpgroup.com/careers" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Careers</a></li>
+                <li><a href="https://sbpgroup.com/blog" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Blog</a></li>
               </ul>
             </div>
             
             {/* Legal Links */}
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-4">Legal</h4>
+              <h4 className="font-semibold text-[#1E3A8A] dark:text-white text-sm mb-4">Legal</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Privacy Policy</a></li>
-                <li><a href="/terms" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Terms of Service</a></li>
-                <li><a href="/security" className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Security</a></li>
+                <li><a href="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Privacy Policy</a></li>
+                <li><a href="/terms" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Terms of Service</a></li>
+                <li><a href="/security" className="text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">Security</a></li>
               </ul>
             </div>
           </div>
@@ -1338,8 +1337,8 @@ export default function Index() {
           {/* Waitlist Form and Parent Company Banner */}
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             {/* Waitlist Form */}
-            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 rounded-2xl border border-primary/20 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Join the waitlist</h3>
+            <div className="bg-gradient-to-r from-[#1E3A8A]/5 via-[#C2410C]/10 to-[#1E3A8A]/5 dark:from-[#1E3A8A]/10 dark:via-[#C2410C]/20 dark:to-[#1E3A8A]/10 rounded-2xl border border-[#1E3A8A]/20 p-6">
+              <h3 className="text-lg font-semibold text-[#1E3A8A] dark:text-white mb-2">Join the waitlist</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Be the first to know when we launch our pricing plans.
               </p>
@@ -1350,12 +1349,12 @@ export default function Index() {
                   value={waitlistEmail}
                   onChange={(e) => setWaitlistEmail(e.target.value)}
                   required
-                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors text-sm"
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] transition-colors text-sm"
                 />
                 <Button 
                   type="submit"
                   disabled={waitlistStatus === 'submitting'}
-                  className="bg-primary hover:bg-primary/90 text-white px-6 h-10"
+                  className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white px-6 h-10"
                 >
                   {waitlistStatus === 'submitting' ? (
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -1370,12 +1369,12 @@ export default function Index() {
             </div>
 
             {/* Parent Company Banner */}
-            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 rounded-2xl border border-primary/20 p-6">
+            <div className="bg-gradient-to-r from-[#1E3A8A]/5 via-[#C2410C]/10 to-[#1E3A8A]/5 dark:from-[#1E3A8A]/10 dark:via-[#C2410C]/20 dark:to-[#1E3A8A]/10 rounded-2xl border border-[#1E3A8A]/20 p-6">
               <div className="flex items-center gap-3">
-                <Building2 className="h-8 w-8 text-primary" />
+                <Building2 className="h-8 w-8 text-[#1E3A8A]" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">A product of</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">Pasbest Ventures Limited</p>
+                  <p className="text-lg font-semibold text-[#1E3A8A] dark:text-white">Pasbest Ventures Limited</p>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-4">
@@ -1384,7 +1383,7 @@ export default function Index() {
                   href="https://pasbestventures.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                  className="text-sm font-medium text-[#1E3A8A] hover:text-[#C2410C] transition-colors flex items-center gap-1"
                 >
                   Visit parent company
                   <ArrowRight className="h-3 w-3" />
@@ -1397,15 +1396,15 @@ export default function Index() {
           <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-200 dark:border-gray-800">
             <p className="text-xs text-gray-500 dark:text-gray-500 mb-4 md:mb-0">
               © {new Date().getFullYear()} Pasbest Ventures Limited. All rights reserved. 
-              Pasbest Talks is a trademark of Pasbest Ventures.
+              SBPMeet is a trademark of Pasbest Ventures Limited.
             </p>
             <div className="flex items-center gap-6">
               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <Shield className="h-3 w-3" />
+                <Shield className="h-3 w-3 text-[#1E3A8A]" />
                 GDPR Compliant
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <Globe className="h-3 w-3" />
+                <Globe className="h-3 w-3 text-[#C2410C]" />
                 Nairobi, Kenya
               </span>
             </div>

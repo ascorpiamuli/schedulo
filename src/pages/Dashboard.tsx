@@ -118,7 +118,7 @@ const MobileCalendarView = ({ bookings }: { bookings: any[] }) => {
               className={cn(
                 "flex flex-col items-center min-w-[60px] p-2 rounded-xl transition-all",
                 isSelected 
-                  ? "bg-primary text-white shadow-lg" 
+                  ? "bg-[#1E3A8A] text-white shadow-lg" 
                   : "bg-muted/50 hover:bg-muted"
               )}
             >
@@ -134,7 +134,7 @@ const MobileCalendarView = ({ bookings }: { bookings: any[] }) => {
               {dayBookings.length > 0 && (
                 <span className={cn(
                   "text-[8px] mt-0.5 px-1.5 py-0.5 rounded-full",
-                  isSelected ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                  isSelected ? "bg-white/20 text-white" : "bg-[#1E3A8A]/10 text-[#1E3A8A]"
                 )}>
                   {dayBookings.length}
                 </span>
@@ -174,7 +174,7 @@ const MobileCalendarView = ({ bookings }: { bookings: any[] }) => {
                 >
                   <div 
                     className="h-2 w-2 rounded-full mt-1.5"
-                    style={{ backgroundColor: booking.event_types?.color || "#7C3AED" }}
+                    style={{ backgroundColor: booking.event_types?.color || "#1E3A8A" }}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">
@@ -206,7 +206,7 @@ const MobileCalendarView = ({ bookings }: { bookings: any[] }) => {
             <Button 
               size="sm" 
               variant="link" 
-              className="mt-1 h-auto p-0 text-[10px]"
+              className="mt-1 h-auto p-0 text-[10px] text-[#1E3A8A]"
               asChild
             >
               <Link to="/dashboard/availability">
@@ -221,7 +221,7 @@ const MobileCalendarView = ({ bookings }: { bookings: any[] }) => {
       <div className="sticky bottom-4 flex justify-center lg:hidden">
         <Button 
           size="sm"
-          className="rounded-full shadow-lg gap-1.5 h-9 px-4"
+          className="rounded-full shadow-lg gap-1.5 h-9 px-4 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
           asChild
         >
           <Link to="/dashboard/events">
@@ -298,7 +298,7 @@ const StatCard = ({ stat, index }: { stat: any; index: number }) => {
             
             <div className="mt-2 sm:mt-3 lg:mt-4 h-1 lg:h-1.5 w-full rounded-full bg-muted/50 overflow-hidden">
               <motion.div 
-                className="h-full rounded-full bg-gradient-to-r from-primary via-primary/80 to-primary/60"
+                className="h-full rounded-full bg-gradient-to-r from-[#1E3A8A] via-[#1E3A8A]/80 to-[#C2410C]/60"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min((stat.value / (stat.max || 20)) * 100, 100)}%` }}
                 transition={{ duration: 1, delay: 0.3 }}
@@ -335,7 +335,7 @@ export default function Dashboard() {
       max: 20,
       unit: "sessions",
       icon: CalendarCheck, 
-      gradient: "from-blue-600/20 via-indigo-600/20 to-purple-600/20",
+      gradient: "from-[#1E3A8A]/20 via-[#1E3A8A]/15 to-[#C2410C]/10",
       change: "+12%",
       trend: "up",
       insight: `${thisWeekCount > 0 ? thisWeekCount + ' sessions' : 'No sessions'}`
@@ -346,7 +346,7 @@ export default function Dashboard() {
       max: 15,
       unit: "bookings",
       icon: Clock, 
-      gradient: "from-amber-600/20 via-orange-600/20 to-rose-600/20",
+      gradient: "from-[#C2410C]/20 via-[#C2410C]/15 to-[#1E3A8A]/10",
       change: upcoming?.length ? `${upcoming.length} active` : "None",
       trend: "neutral",
       insight: upcoming?.length ? `Next: ${upcoming[0]?.guest_name}` : 'Ready to book'
@@ -357,7 +357,7 @@ export default function Dashboard() {
       max: 50,
       unit: "total",
       icon: BarChart3, 
-      gradient: "from-emerald-600/20 via-teal-600/20 to-cyan-600/20",
+      gradient: "from-[#1E3A8A]/20 via-[#C2410C]/10 to-emerald-600/10",
       change: `+${past?.length || 0}`,
       trend: "neutral",
       insight: `${((past?.length || 0) / (allConfirmed.length || 1) * 100).toFixed(0)}% completion`
@@ -388,11 +388,11 @@ export default function Dashboard() {
       {/* Hero Section - Ultra Responsive */}
       <motion.div 
         variants={fadeUpVariants}
-        className="relative overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-3 sm:p-4 lg:p-6 border border-primary/10"
+        className="relative overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl bg-gradient-to-br from-[#1E3A8A]/10 via-[#1E3A8A]/5 to-transparent p-3 sm:p-4 lg:p-6 border border-[#1E3A8A]/10"
       >
         <div className="absolute inset-0">
-          <div className="absolute -right-20 -top-20 h-32 w-32 sm:h-40 sm:w-40 animate-pulse-slow rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute -bottom-32 -left-20 h-40 w-40 sm:h-56 sm:w-56 animate-pulse-slower rounded-full bg-blue-500/20 blur-3xl" />
+          <div className="absolute -right-20 -top-20 h-32 w-32 sm:h-40 sm:w-40 animate-pulse-slow rounded-full bg-[#1E3A8A]/20 blur-3xl" />
+          <div className="absolute -bottom-32 -left-20 h-40 w-40 sm:h-56 sm:w-56 animate-pulse-slower rounded-full bg-[#C2410C]/20 blur-3xl" />
         </div>
         
         <div className="relative flex flex-col lg:flex-row items-start justify-between gap-3 lg:gap-6">
@@ -400,7 +400,7 @@ export default function Dashboard() {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="mb-2 sm:mb-3 lg:mb-4 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 sm:px-2.5 sm:py-1 lg:px-3 lg:py-1.5 text-[8px] sm:text-[9px] lg:text-xs font-medium text-primary backdrop-blur-sm border border-primary/20"
+              className="mb-2 sm:mb-3 lg:mb-4 inline-flex items-center gap-1 rounded-full bg-[#1E3A8A]/15 px-2 py-0.5 sm:px-2.5 sm:py-1 lg:px-3 lg:py-1.5 text-[8px] sm:text-[9px] lg:text-xs font-medium text-[#1E3A8A] backdrop-blur-sm border border-[#1E3A8A]/20"
             >
               <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5" />
               <span className="hidden xs:inline">Intelligent Scheduling</span>
@@ -409,7 +409,7 @@ export default function Dashboard() {
             
             <h1 className="font-['Space_Grotesk'] text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold tracking-tight">
               Welcome back
-              <span className="mt-0.5 block bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-transparent">
+              <span className="mt-0.5 block bg-gradient-to-r from-[#1E3A8A] via-[#1E3A8A]/80 to-[#C2410C]/60 bg-clip-text text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-transparent">
                 {user?.user_metadata?.full_name?.split(' ')[0] || "there"}
                 <motion.span
                   animate={{ rotate: [0, 15, -15, 0] }}
@@ -431,7 +431,7 @@ export default function Dashboard() {
             <div className="mt-3 sm:mt-4 lg:mt-5 flex flex-row items-center gap-1.5 sm:gap-2 lg:gap-3">
               <Button 
                 size="sm"
-                className="group relative gap-1 sm:gap-1.5 lg:gap-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white shadow-md hover:shadow-lg text-[10px] sm:text-xs h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-4"
+                className="group relative gap-1 sm:gap-1.5 lg:gap-2 bg-gradient-to-r from-[#1E3A8A] via-[#1E3A8A]/90 to-[#C2410C]/80 text-white shadow-md hover:shadow-lg text-[10px] sm:text-xs h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-4"
                 asChild
               >
                 <Link to="/dashboard/events">
@@ -444,7 +444,7 @@ export default function Dashboard() {
               <Button 
                 size="sm"
                 variant="outline" 
-                className="gap-1 sm:gap-1.5 lg:gap-2 border-primary/20 bg-background/50 backdrop-blur-sm hover:bg-primary/10 text-[10px] sm:text-xs h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-4"
+                className="gap-1 sm:gap-1.5 lg:gap-2 border-[#1E3A8A]/20 bg-background/50 backdrop-blur-sm hover:bg-[#1E3A8A]/10 text-[10px] sm:text-xs h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-4"
                 onClick={copyBookingLink}
               >
                 {copied ? (
@@ -458,84 +458,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Next Booking Card - Responsive */}
-          {nextBooking && (
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="w-full lg:w-80 shrink-0 mt-2 lg:mt-0"
-            >
-              <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-background via-background/95 to-background/90 shadow-lg lg:shadow-xl backdrop-blur-xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-                
-                <CardContent className="relative p-3 sm:p-4 lg:p-5">
-                  <div className="flex items-center justify-between mb-1.5 sm:mb-2 lg:mb-3">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 sm:px-2 sm:py-0.5 lg:px-2.5 lg:py-1 text-[8px] sm:text-[9px] lg:text-xs font-medium text-primary">
-                      <Clock className="h-2 w-2 sm:h-2.5 sm:w-2.5 lg:h-3 lg:w-3" />
-                      Next
-                    </span>
-                    <span className="text-[7px] sm:text-[8px] lg:text-[10px] font-medium text-muted-foreground/70">
-                      #{nextBooking.id.slice(-4)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-start gap-2 sm:gap-2.5 lg:gap-3">
-                    <motion.div 
-                      className="relative shrink-0 mt-0.5"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <div 
-                        className="h-2 w-2 sm:h-2.5 sm:w-2.5 lg:h-3 lg:w-3 rounded-full ring-3 sm:ring-4" 
-                        style={{ 
-                          backgroundColor: nextBooking.event_types?.color || "#7C3AED",
-                          boxShadow: `0 0 10px ${nextBooking.event_types?.color}40`
-                        }} 
-                      />
-                    </motion.div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-['Space_Grotesk'] text-xs sm:text-sm lg:text-base font-bold leading-tight truncate">
-                        {nextBooking.event_types?.title}
-                      </h3>
-                      
-                      <div className="mt-1 sm:mt-1.5 lg:mt-2 space-y-0.5 sm:space-y-1">
-                        <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs">
-                          <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground shrink-0" />
-                          <span className="font-medium truncate">{nextBooking.guest_name}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs">
-                          <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground shrink-0" />
-                          <span className="font-semibold text-primary shrink-0">
-                            {getRelativeDay(new Date(nextBooking.start_time))}
-                          </span>
-                          <span className="text-muted-foreground hidden xs:inline">·</span>
-                          <span className="font-medium truncate hidden xs:inline">
-                            {format(new Date(nextBooking.start_time), "h:mm a")}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2 sm:mt-3 lg:mt-4">
-                        <Button 
-                          asChild 
-                          size="sm"
-                          className="w-full gap-1 bg-primary/90 hover:bg-primary h-6 sm:h-7 lg:h-8 text-[8px] sm:text-[9px] lg:text-xs"
-                        >
-                          <Link to={`/dashboard/bookings/${nextBooking.id}`}>
-                            <span>View details</span>
-                            <ArrowRight className="h-2 w-2 sm:h-2.5 sm:w-2.5 lg:h-3 lg:w-3" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+
         </div>
       </motion.div>
 
@@ -551,12 +474,12 @@ export default function Dashboard() {
 
       {/* Smart Insights - Responsive */}
       <motion.div variants={fadeUpVariants}>
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/5 via-primary/5 to-transparent shadow-lg">
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-[#1E3A8A]/5 via-[#1E3A8A]/5 to-transparent shadow-lg">
           <CardContent className="relative p-3 sm:p-4 lg:p-5">
             <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-2 sm:gap-3">
               <div className="flex items-start gap-2 sm:gap-2.5 lg:gap-3">
-                <div className="rounded-lg bg-primary/10 p-1 sm:p-1.5 lg:p-2">
-                  <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-primary" />
+                <div className="rounded-lg bg-[#1E3A8A]/10 p-1 sm:p-1.5 lg:p-2">
+                  <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-[#1E3A8A]" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-['Space_Grotesk'] text-[10px] sm:text-xs lg:text-sm font-semibold">Smart Insights</h3>
@@ -578,10 +501,10 @@ export default function Dashboard() {
             
             <div className="mt-3 sm:mt-4 grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
               {[
-                { label: "Best time", value: "Tue 2-4", icon: Star, color: "text-amber-500" },
-                { label: "Peak day", value: "Wed", icon: TrendingUp, color: "text-emerald-500" },
-                { label: "Response", value: "< 2h", icon: Zap, color: "text-blue-500" },
-                { label: "No-show", value: "4.2%", icon: AlertCircle, color: "text-rose-500" },
+                { label: "Best time", value: "Tue 2-4", icon: Star, color: "text-[#C2410C]" },
+                { label: "Peak day", value: "Wed", icon: TrendingUp, color: "text-[#1E3A8A]" },
+                { label: "Response", value: "< 2h", icon: Zap, color: "text-[#C2410C]" },
+                { label: "No-show", value: "4.2%", icon: AlertCircle, color: "text-[#1E3A8A]" },
               ].map((insight) => (
                 <div key={insight.label} className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 rounded-lg bg-background/50 p-1.5 sm:p-2 backdrop-blur-sm">
                   <insight.icon className={`h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 ${insight.color} shrink-0`} />
@@ -603,7 +526,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-1 text-[8px] sm:text-[9px] lg:text-xs text-muted-foreground">
             <Globe className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5" />
             <span className="hidden xs:inline">Booking:</span>
-            <Button variant="link" className="h-auto p-0 text-[8px] sm:text-[9px] lg:text-xs text-primary" asChild>
+            <Button variant="link" className="h-auto p-0 text-[8px] sm:text-[9px] lg:text-xs text-[#1E3A8A]" asChild>
               <Link to={`/${user?.user_metadata?.username || 'book'}`}>
                 {bookingLink.replace(/^https?:\/\//, '').substring(0, 15)}...
               </Link>
@@ -645,12 +568,12 @@ export default function Dashboard() {
         {/* Calendar - Mobile Optimized */}
         <motion.div variants={fadeUpVariants} className="lg:col-span-2">
           <Card className="relative overflow-hidden border-0 shadow-lg h-full">
-            <div className="absolute right-0 top-0 h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full" />
+            <div className="absolute right-0 top-0 h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 bg-gradient-to-br from-[#1E3A8A]/5 to-transparent rounded-bl-full" />
             
             <CardHeader className="flex flex-row items-center justify-between pb-0 pt-2 sm:pt-3 lg:pt-4 px-3 sm:px-4 lg:px-5">
               <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2">
-                <div className="rounded-lg bg-primary/10 p-1 sm:p-1.5">
-                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-primary" />
+                <div className="rounded-lg bg-[#1E3A8A]/10 p-1 sm:p-1.5">
+                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-[#1E3A8A]" />
                 </div>
                 <CardTitle className="font-['Space_Grotesk'] text-[10px] sm:text-xs lg:text-sm font-semibold">
                   Schedule
@@ -682,17 +605,17 @@ export default function Dashboard() {
         {/* Upcoming Bookings - Mobile Optimized */}
         <motion.div variants={fadeUpVariants}>
           <Card className="relative h-full overflow-hidden border-0 shadow-lg">
-            <div className="absolute left-0 top-0 h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 bg-gradient-to-br from-primary/5 to-transparent rounded-br-full" />
+            <div className="absolute left-0 top-0 h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 bg-gradient-to-br from-[#C2410C]/5 to-transparent rounded-br-full" />
             
             <CardHeader className="pb-0 pt-2 sm:pt-3 lg:pt-4 px-3 sm:px-4 lg:px-5">
               <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2">
-                <div className="rounded-lg bg-primary/10 p-1 sm:p-1.5">
-                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-primary" />
+                <div className="rounded-lg bg-[#1E3A8A]/10 p-1 sm:p-1.5">
+                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-[#1E3A8A]" />
                 </div>
                 <CardTitle className="font-['Space_Grotesk'] text-[10px] sm:text-xs lg:text-sm font-semibold flex items-center">
                   Upcoming
                   {upcoming && upcoming.length > 0 && (
-                    <span className="ml-1 sm:ml-1.5 lg:ml-2 rounded-full bg-primary/10 px-1 py-0.5 text-[7px] sm:text-[8px] lg:text-[10px] font-medium text-primary">
+                    <span className="ml-1 sm:ml-1.5 lg:ml-2 rounded-full bg-[#1E3A8A]/10 px-1 py-0.5 text-[7px] sm:text-[8px] lg:text-[10px] font-medium text-[#1E3A8A]">
                       {upcoming.length}
                     </span>
                   )}
@@ -714,10 +637,10 @@ export default function Dashboard() {
         </motion.div>
       </div>
       
-      {/* Footer status - hidden on mobile */}
+      {/* Footer status with Pasbest Ventures attribution */}
       <motion.div 
         variants={fadeUpVariants}
-        className="hidden lg:flex items-center justify-between rounded-lg bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground"
+        className="flex flex-col sm:flex-row items-center justify-between gap-2 rounded-lg bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground"
       >
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -728,6 +651,16 @@ export default function Dashboard() {
           <Button variant="ghost" size="sm" className="h-auto p-0 text-xs font-normal">
             Refresh
           </Button>
+        </div>
+        <div className="text-[10px] text-muted-foreground/60">
+          <a 
+            href="https://pasbestventures.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-[#1E3A8A] transition-colors"
+          >
+            Pasbest Ventures Limited
+          </a>
         </div>
       </motion.div>
     </motion.div>
@@ -746,10 +679,10 @@ const QuickActionButton = ({ to, icon: Icon, title, desc, gradient }: any) => (
       variant={gradient ? "default" : "outline"}
       className={cn(
         "h-auto w-full justify-start gap-1.5 sm:gap-2 lg:gap-3 p-1.5 sm:p-2 lg:p-2.5 text-left transition-all duration-300",
-        gradient ? "bg-gradient-to-r from-primary to-primary/90 shadow-sm hover:shadow-md" : "border bg-background/50 backdrop-blur-sm hover:bg-primary/5"
+        gradient ? "bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] shadow-sm hover:shadow-md" : "border bg-background/50 backdrop-blur-sm hover:bg-[#1E3A8A]/5"
       )}
     >
-      <Link to={to}>
+      <Link to={to} className="flex items-center w-full">
         <div className={cn(
           "rounded-lg p-1 sm:p-1.5",
           gradient ? "bg-white/20" : "bg-muted"
@@ -759,7 +692,7 @@ const QuickActionButton = ({ to, icon: Icon, title, desc, gradient }: any) => (
             gradient ? "text-white" : "text-foreground"
           )} />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 ml-2">
           <p className={cn(
             "text-[9px] sm:text-[10px] lg:text-xs font-semibold truncate",
             gradient && "text-white"
@@ -786,9 +719,9 @@ const EmptyState = ({ copied, copyBookingLink }: any) => (
     className="flex flex-col items-center justify-center py-4 sm:py-6 lg:py-8 text-center"
   >
     <div className="relative mb-2 sm:mb-3 lg:mb-4">
-      <div className="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-lg sm:blur-xl" />
-      <div className="relative rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-2 sm:p-2.5 lg:p-3">
-        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary/60" />
+      <div className="absolute inset-0 animate-pulse rounded-full bg-[#1E3A8A]/20 blur-lg sm:blur-xl" />
+      <div className="relative rounded-full bg-gradient-to-br from-[#1E3A8A]/20 to-[#C2410C]/5 p-2 sm:p-2.5 lg:p-3">
+        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-[#1E3A8A]/60" />
       </div>
     </div>
     <h3 className="font-['Space_Grotesk'] text-[10px] sm:text-xs lg:text-sm font-semibold">
@@ -798,11 +731,11 @@ const EmptyState = ({ copied, copyBookingLink }: any) => (
       Share your booking link to start scheduling.
     </p>
     <div className="mt-3 sm:mt-4 lg:mt-5 flex w-full flex-col gap-1.5 sm:gap-2">
-      <Button size="sm" className="w-full gap-1 text-[8px] sm:text-[9px] lg:text-xs h-6 sm:h-7 lg:h-8" onClick={copyBookingLink}>
+      <Button size="sm" className="w-full gap-1 text-[8px] sm:text-[9px] lg:text-xs h-6 sm:h-7 lg:h-8 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" onClick={copyBookingLink}>
         {copied ? <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
         {copied ? "Copied!" : "Copy booking link"}
       </Button>
-      <Button variant="outline" size="sm" className="w-full gap-1 text-[8px] sm:text-[9px] lg:text-xs h-6 sm:h-7 lg:h-8" asChild>
+      <Button variant="outline" size="sm" className="w-full gap-1 text-[8px] sm:text-[9px] lg:text-xs h-6 sm:h-7 lg:h-8 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5" asChild>
         <Link to="/dashboard/availability">
           <Settings2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           Configure
@@ -829,12 +762,12 @@ const UpcomingList = ({ upcoming, getRelativeDay }: any) => (
             <div className="relative shrink-0 mt-0.5">
               <div 
                 className="absolute inset-0 animate-ping rounded-full opacity-20" 
-                style={{ backgroundColor: booking.event_types?.color || "#7C3AED" }}
+                style={{ backgroundColor: booking.event_types?.color || "#1E3A8A" }}
               />
               <div 
                 className="relative h-1.5 w-1.5 sm:h-2 sm:w-2 lg:h-2.5 lg:w-2.5 rounded-full ring-2 sm:ring-3" 
                 style={{ 
-                  backgroundColor: booking.event_types?.color || "#7C3AED",
+                  backgroundColor: booking.event_types?.color || "#1E3A8A",
                   boxShadow: `0 0 0 2px ${booking.event_types?.color}20`
                 }} 
               />
@@ -850,7 +783,7 @@ const UpcomingList = ({ upcoming, getRelativeDay }: any) => (
                     {booking.guest_name}
                   </p>
                 </div>
-                <span className="text-[7px] sm:text-[8px] lg:text-[10px] font-medium text-primary shrink-0 ml-1">
+                <span className="text-[7px] sm:text-[8px] lg:text-[10px] font-medium text-[#1E3A8A] shrink-0 ml-1">
                   {getRelativeDay(new Date(booking.start_time))}
                 </span>
               </div>
@@ -876,7 +809,7 @@ const UpcomingList = ({ upcoming, getRelativeDay }: any) => (
         <Button 
           variant="ghost" 
           asChild 
-          className="mt-0.5 sm:mt-1 w-full gap-1 bg-gradient-to-r from-primary/5 to-transparent text-primary hover:from-primary/10 hover:to-primary/5 h-5 sm:h-6 lg:h-7 text-[7px] sm:text-[8px] lg:text-[10px]"
+          className="mt-0.5 sm:mt-1 w-full gap-1 bg-gradient-to-r from-[#1E3A8A]/5 to-transparent text-[#1E3A8A] hover:from-[#1E3A8A]/10 hover:to-[#C2410C]/5 h-5 sm:h-6 lg:h-7 text-[7px] sm:text-[8px] lg:text-[10px]"
         >
           <Link to="/dashboard/bookings">
             View {upcoming.length - 4} more

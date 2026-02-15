@@ -61,8 +61,8 @@ function formatTime(t: string) {
 function getTimeIcon(time: string) {
   const hour = parseInt(time.split(":")[0]);
   if (hour < 12) return <Sun className="h-3 w-3 text-amber-500" />;
-  if (hour < 17) return <Sun className="h-3 w-3 text-orange-500" />;
-  return <Moon className="h-3 w-3 text-blue-500" />;
+  if (hour < 17) return <Sun className="h-3 w-3 text-[#C2410C]" />;
+  return <Moon className="h-3 w-3 text-[#1E3A8A]" />;
 }
 
 interface DaySlot {
@@ -250,11 +250,11 @@ export default function Availability() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 sm:p-5 lg:p-6 border border-primary/10"
+        className="relative overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl bg-gradient-to-br from-[#1E3A8A]/10 via-[#1E3A8A]/5 to-transparent p-4 sm:p-5 lg:p-6 border border-[#1E3A8A]/10"
       >
         <div className="absolute inset-0">
-          <div className="absolute -right-20 -top-20 h-40 w-40 animate-pulse-slow rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute -bottom-32 -left-20 h-56 w-56 animate-pulse-slower rounded-full bg-blue-500/20 blur-3xl" />
+          <div className="absolute -right-20 -top-20 h-40 w-40 animate-pulse-slow rounded-full bg-[#1E3A8A]/20 blur-3xl" />
+          <div className="absolute -bottom-32 -left-20 h-56 w-56 animate-pulse-slower rounded-full bg-[#C2410C]/20 blur-3xl" />
         </div>
 
         <div className="relative">
@@ -263,13 +263,13 @@ export default function Availability() {
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-[10px] sm:text-xs font-medium text-primary backdrop-blur-sm border border-primary/20"
+                className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-[#1E3A8A]/15 px-2.5 py-1 text-[10px] sm:text-xs font-medium text-[#1E3A8A] backdrop-blur-sm border border-[#1E3A8A]/20"
               >
                 <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 Availability Settings
               </motion.div>
               
-              <h1 className="font-['Space_Grotesk'] text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
+              <h1 className="font-['Space_Grotesk'] text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#1E3A8A]">
                 When are you available?
               </h1>
               
@@ -282,17 +282,17 @@ export default function Availability() {
               <Button 
                 variant="outline" 
                 size="sm"
-                className="gap-1.5 text-xs h-9"
+                className="gap-1.5 text-xs h-9 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5"
                 onClick={copyScheduleLink}
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-[#1E3A8A]" /> : <Copy className="h-3.5 w-3.5" />}
                 <span className="hidden sm:inline">{copied ? "Copied!" : "Share"}</span>
               </Button>
               
               <Button 
                 onClick={handleSave} 
                 disabled={!dirty || saveMutation.isPending}
-                className="gap-1.5 bg-gradient-to-r from-primary to-primary/90 text-white shadow-md hover:shadow-lg text-xs sm:text-sm h-9"
+                className="gap-1.5 bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] text-white shadow-md hover:shadow-lg text-xs sm:text-sm h-9"
               >
                 {saveMutation.isPending ? (
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -307,28 +307,28 @@ export default function Availability() {
           {/* Quick Stats */}
           <div className="mt-4 sm:mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2 backdrop-blur-sm">
-              <Clock className="h-3.5 w-3.5 text-primary" />
+              <Clock className="h-3.5 w-3.5 text-[#1E3A8A]" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Weekly hours</p>
-                <p className="text-xs font-semibold">{getTotalWeeklyHours()}h</p>
+                <p className="text-xs font-semibold text-[#1E3A8A]">{getTotalWeeklyHours()}h</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2 backdrop-blur-sm">
-              <CalendarDays className="h-3.5 w-3.5 text-primary" />
+              <CalendarDays className="h-3.5 w-3.5 text-[#1E3A8A]" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Available days</p>
-                <p className="text-xs font-semibold">{schedule.filter(d => d.enabled).length}/7</p>
+                <p className="text-xs font-semibold text-[#1E3A8A]">{schedule.filter(d => d.enabled).length}/7</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2 backdrop-blur-sm">
-              <CalendarOff className="h-3.5 w-3.5 text-primary" />
+              <CalendarOff className="h-3.5 w-3.5 text-[#C2410C]" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Overrides</p>
-                <p className="text-xs font-semibold">{overrides?.length || 0}</p>
+                <p className="text-xs font-semibold text-[#1E3A8A]">{overrides?.length || 0}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2 backdrop-blur-sm">
-              <Zap className="h-3.5 w-3.5 text-primary" />
+              <Zap className="h-3.5 w-3.5 text-[#1E3A8A]" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Status</p>
                 <p className="text-xs font-semibold text-emerald-600">Active</p>
@@ -345,11 +345,11 @@ export default function Availability() {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-['Space_Grotesk'] text-sm sm:text-base font-semibold">Quick templates</h2>
+          <h2 className="font-['Space_Grotesk'] text-sm sm:text-base font-semibold text-[#1E3A8A]">Quick templates</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 hover:text-[#1E3A8A]">
                   <Timer className="h-3 w-3" />
                   Presets
                 </Button>
@@ -369,7 +369,7 @@ export default function Availability() {
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-lg p-2.5 transition-all",
                 activePreset === preset.name
-                  ? "bg-primary text-white shadow-md"
+                  ? "bg-[#1E3A8A] text-white shadow-md"
                   : "bg-muted/50 hover:bg-muted text-foreground"
               )}
             >
@@ -395,14 +395,14 @@ export default function Availability() {
         transition={{ delay: 0.15 }}
       >
         <Card className="relative overflow-hidden border-0 shadow-lg">
-          <div className="absolute right-0 top-0 h-24 w-24 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full" />
+          <div className="absolute right-0 top-0 h-24 w-24 bg-gradient-to-br from-[#1E3A8A]/5 to-transparent rounded-bl-full" />
           
           <CardHeader className="pb-2 pt-4 px-4 sm:px-5">
             <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-primary/10 p-1.5">
-                <Clock className="h-4 w-4 text-primary" />
+              <div className="rounded-lg bg-[#1E3A8A]/10 p-1.5">
+                <Clock className="h-4 w-4 text-[#1E3A8A]" />
               </div>
-              <CardTitle className="font-['Space_Grotesk'] text-sm sm:text-base font-semibold">
+              <CardTitle className="font-['Space_Grotesk'] text-sm sm:text-base font-semibold text-[#1E3A8A]">
                 Weekly hours
               </CardTitle>
               {dirty && (
@@ -438,11 +438,11 @@ export default function Availability() {
                         <Switch 
                           checked={schedule[i].enabled} 
                           onCheckedChange={() => toggleDay(i)}
-                          className="data-[state=checked]:bg-primary"
+                          className="data-[state=checked]:bg-[#1E3A8A]"
                         />
                         <span className={cn(
                           "text-xs sm:text-sm font-medium flex-1",
-                          schedule[i].enabled ? "text-foreground" : "text-muted-foreground"
+                          schedule[i].enabled ? "text-[#1E3A8A]" : "text-muted-foreground"
                         )}>
                           {day}
                         </span>
@@ -466,7 +466,7 @@ export default function Availability() {
                                     value={r.start} 
                                     onValueChange={(v) => updateRange(i, rIdx, "start", v)}
                                   >
-                                    <SelectTrigger className="w-full xs:w-24 h-8 text-xs">
+                                    <SelectTrigger className="w-full xs:w-24 h-8 text-xs border-[#1E3A8A]/20 focus:ring-[#1E3A8A]/20">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -487,7 +487,7 @@ export default function Availability() {
                                     value={r.end} 
                                     onValueChange={(v) => updateRange(i, rIdx, "end", v)}
                                   >
-                                    <SelectTrigger className="w-full xs:w-24 h-8 text-xs">
+                                    <SelectTrigger className="w-full xs:w-24 h-8 text-xs border-[#1E3A8A]/20 focus:ring-[#1E3A8A]/20">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -503,7 +503,7 @@ export default function Availability() {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  className="h-7 w-7 shrink-0 ml-auto xs:ml-0"
+                                  className="h-7 w-7 shrink-0 ml-auto xs:ml-0 hover:text-[#C2410C]"
                                   onClick={() => removeRange(i, rIdx)}
                                 >
                                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -515,7 +515,7 @@ export default function Availability() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="w-fit gap-1.5 text-xs h-7 mt-1"
+                            className="w-fit gap-1.5 text-xs h-7 mt-1 text-[#1E3A8A] hover:text-[#C2410C]"
                             onClick={() => addRange(i)}
                           >
                             <Plus className="h-3 w-3" /> 
@@ -534,7 +534,7 @@ export default function Availability() {
                     {schedule[i].enabled && schedule[i].ranges.length > 0 && (
                       <div className="flex flex-wrap gap-1 ml-9 sm:hidden">
                         {schedule[i].ranges.map((r, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[8px] px-1.5 py-0">
+                          <Badge key={idx} variant="secondary" className="text-[8px] px-1.5 py-0 border-[#1E3A8A]/20">
                             {formatTime(r.start)} - {formatTime(r.end)}
                           </Badge>
                         ))}
@@ -548,25 +548,25 @@ export default function Availability() {
         </Card>
       </motion.div>
 
-      {/* Date overrides - FIXED */}
+      {/* Date overrides */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
         <Card className="relative overflow-hidden border-0 shadow-lg">
-          <div className="absolute left-0 top-0 h-24 w-24 bg-gradient-to-br from-primary/5 to-transparent rounded-br-full" />
+          <div className="absolute left-0 top-0 h-24 w-24 bg-gradient-to-br from-[#C2410C]/5 to-transparent rounded-br-full" />
           
           <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 sm:px-5">
             <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-primary/10 p-1.5">
-                <CalendarOff className="h-4 w-4 text-primary" />
+              <div className="rounded-lg bg-[#1E3A8A]/10 p-1.5">
+                <CalendarOff className="h-4 w-4 text-[#1E3A8A]" />
               </div>
-              <CardTitle className="font-['Space_Grotesk'] text-sm sm:text-base font-semibold">
+              <CardTitle className="font-['Space_Grotesk'] text-sm sm:text-base font-semibold text-[#1E3A8A]">
                 Date overrides
               </CardTitle>
               {overrides && overrides.length > 0 && (
-                <Badge variant="secondary" className="ml-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 text-[10px] bg-[#1E3A8A]/10 text-[#1E3A8A]">
                   {overrides.length}
                 </Badge>
               )}
@@ -575,7 +575,7 @@ export default function Availability() {
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-1.5 h-8 text-xs"
+              className="gap-1.5 h-8 text-xs border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5"
               onClick={() => setOverrideDialogOpen(true)}
             >
               <Plus className="h-3.5 w-3.5" /> 
@@ -592,12 +592,12 @@ export default function Availability() {
                 className="flex flex-col items-center justify-center py-8 sm:py-10 text-center"
               >
                 <div className="relative mb-3 sm:mb-4">
-                  <div className="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-xl" />
-                  <div className="relative rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-3 sm:p-4">
-                    <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary/60" />
+                  <div className="absolute inset-0 animate-pulse rounded-full bg-[#1E3A8A]/20 blur-xl" />
+                  <div className="relative rounded-full bg-gradient-to-br from-[#1E3A8A]/20 to-[#C2410C]/5 p-3 sm:p-4">
+                    <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-[#1E3A8A]/60" />
                   </div>
                 </div>
-                <h3 className="font-['Space_Grotesk'] text-xs sm:text-sm font-semibold">
+                <h3 className="font-['Space_Grotesk'] text-xs sm:text-sm font-semibold text-[#1E3A8A]">
                   No blocked dates
                 </h3>
                 <p className="mt-1 max-w-xs text-[10px] sm:text-xs text-muted-foreground px-4">
@@ -606,7 +606,7 @@ export default function Availability() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="mt-4 gap-1.5 text-xs h-8"
+                  className="mt-4 gap-1.5 text-xs h-8 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5"
                   onClick={() => setOverrideDialogOpen(true)}
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -631,7 +631,7 @@ export default function Availability() {
                             <CalendarOff className="h-3.5 w-3.5 text-rose-500" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs sm:text-sm font-medium">
+                            <p className="text-xs sm:text-sm font-medium text-[#1E3A8A]">
                               {format(new Date(o.date + "T00:00:00"), "EEE, MMM d, yyyy")}
                             </p>
                             {o.reason && (
@@ -666,13 +666,13 @@ export default function Availability() {
         </Card>
       </motion.div>
 
-      {/* Block date dialog - FIXED calendar size */}
+      {/* Block date dialog */}
       <Dialog open={overrideDialogOpen} onOpenChange={setOverrideDialogOpen}>
         <DialogContent className="sm:max-w-md w-[95vw] rounded-xl p-4 sm:p-6">
           <DialogHeader className="space-y-2 pb-2">
-            <DialogTitle className="font-['Space_Grotesk'] text-lg sm:text-xl flex items-center gap-2">
-              <div className="rounded-lg bg-primary/10 p-1.5">
-                <CalendarOff className="h-4 w-4 text-primary" />
+            <DialogTitle className="font-['Space_Grotesk'] text-lg sm:text-xl flex items-center gap-2 text-[#1E3A8A]">
+              <div className="rounded-lg bg-[#1E3A8A]/10 p-1.5">
+                <CalendarOff className="h-4 w-4 text-[#1E3A8A]" />
               </div>
               Block a date
             </DialogTitle>
@@ -692,7 +692,7 @@ export default function Availability() {
                   caption: "flex justify-center pt-1 relative items-center",
                   caption_label: "text-sm font-medium",
                   nav: "space-x-1 flex items-center",
-                  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-[#1E3A8A]/10",
                   nav_button_previous: "absolute left-1",
                   nav_button_next: "absolute right-1",
                   table: "w-full border-collapse space-y-1",
@@ -700,8 +700,8 @@ export default function Availability() {
                   head_cell: "text-muted-foreground rounded-md w-8 sm:w-9 font-normal text-[0.8rem]",
                   row: "flex w-full mt-2",
                   cell: "h-8 w-8 sm:h-9 sm:w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                  day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
-                  day_selected: "bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-primary-foreground",
+                  day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] rounded-md",
+                  day_selected: "bg-[#1E3A8A] text-white hover:bg-[#1E3A8A] hover:text-white focus:bg-[#1E3A8A] focus:text-primary-foreground",
                   day_today: "bg-accent text-accent-foreground",
                   day_disabled: "text-muted-foreground opacity-50",
                   day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
@@ -711,16 +711,16 @@ export default function Availability() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="reason" className="text-xs sm:text-sm">Reason (optional)</Label>
+              <Label htmlFor="reason" className="text-xs sm:text-sm text-[#1E3A8A]">Reason (optional)</Label>
               <div className="relative">
                 <Input
                   id="reason"
                   value={overrideReason}
                   onChange={(e) => setOverrideReason(e.target.value)}
                   placeholder="e.g. Holiday, vacation, conference"
-                  className="pl-8 text-xs sm:text-sm h-9 sm:h-10"
+                  className="pl-8 text-xs sm:text-sm h-9 sm:h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
                 />
-                <AlertCircle className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <AlertCircle className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1E3A8A]" />
               </div>
               <p className="text-[10px] text-muted-foreground">
                 This helps you remember why this date is blocked
@@ -730,7 +730,7 @@ export default function Availability() {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
               <Button 
                 onClick={handleAddOverride} 
-                className="flex-1 gap-1.5 text-xs sm:text-sm h-9 sm:h-10"
+                className="flex-1 gap-1.5 text-xs sm:text-sm h-9 sm:h-10 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
                 disabled={!selectedDate || createOverride.isPending}
               >
                 {createOverride.isPending ? (
@@ -748,7 +748,7 @@ export default function Availability() {
               <Button 
                 variant="outline" 
                 onClick={() => setOverrideDialogOpen(false)}
-                className="h-9 sm:h-10"
+                className="h-9 sm:h-10 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5"
               >
                 Cancel
               </Button>
@@ -765,15 +765,15 @@ export default function Availability() {
           transition={{ delay: 0.25 }}
           className="hidden sm:block"
         >
-          <Card className="border-0 bg-gradient-to-br from-primary/5 via-primary/5 to-transparent shadow-lg">
+          <Card className="border-0 bg-gradient-to-br from-[#1E3A8A]/5 via-[#1E3A8A]/5 to-transparent shadow-lg">
             <CardContent className="p-4 sm:p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2">
-                    <Zap className="h-4 w-4 text-primary" />
+                  <div className="rounded-lg bg-[#1E3A8A]/10 p-2">
+                    <Zap className="h-4 w-4 text-[#1E3A8A]" />
                   </div>
                   <div>
-                    <h3 className="font-['Space_Grotesk'] text-xs sm:text-sm font-semibold">
+                    <h3 className="font-['Space_Grotesk'] text-xs sm:text-sm font-semibold text-[#1E3A8A]">
                       Availability tips
                     </h3>
                     <p className="mt-0.5 text-[10px] sm:text-xs text-muted-foreground max-w-md">
@@ -791,7 +791,7 @@ export default function Availability() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-7 gap-1 text-[10px] sm:text-xs"
+                  className="h-7 gap-1 text-[10px] sm:text-xs hover:text-[#1E3A8A]"
                   onClick={() => setShowTimeTips(false)}
                 >
                   Hide
@@ -812,14 +812,14 @@ export default function Availability() {
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-medium">Unsaved changes</p>
+              <p className="text-xs font-medium text-[#1E3A8A]">Unsaved changes</p>
               <p className="text-[10px] text-muted-foreground">Your availability hasn't been saved</p>
             </div>
             <Button 
               onClick={handleSave} 
               disabled={saveMutation.isPending}
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
             >
               {saveMutation.isPending ? (
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -831,6 +831,21 @@ export default function Availability() {
           </div>
         </motion.div>
       )}
+
+      {/* Pasbest Ventures Attribution */}
+      <div className="mt-8 pt-4 border-t text-center">
+        <p className="text-xs text-muted-foreground">
+          A product of{" "}
+          <a 
+            href="https://pasbestventures.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[#1E3A8A] hover:text-[#C2410C] transition-colors font-medium"
+          >
+            Pasbest Ventures Limited
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

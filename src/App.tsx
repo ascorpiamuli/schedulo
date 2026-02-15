@@ -15,6 +15,8 @@ import DashboardLayout from "./components/DashboardLayout";
 import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
+import Teams from "./pages/Teams";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,18 +127,12 @@ const App = () => {
               } />
               <Route path="/dashboard/team" element={
                 <ProtectedRoute>
-                  <div className="p-8 text-center">
-                    <h2 className="text-2xl font-bold mb-2">Team Management</h2>
-                    <p className="text-muted-foreground">Coming soon...</p>
-                  </div>
+                  <Teams/>
                 </ProtectedRoute>
               } />
               <Route path="/dashboard/settings" element={
                 <ProtectedRoute>
-                  <div className="p-8 text-center">
-                    <h2 className="text-2xl font-bold mb-2">Settings</h2>
-                    <p className="text-muted-foreground">Coming soon...</p>
-                  </div>
+                  <Settings/>
                 </ProtectedRoute>
               } />
               
