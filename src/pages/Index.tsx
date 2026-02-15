@@ -472,9 +472,15 @@ export default function Index() {
       setTimeout(() => setWaitlistStatus('idle'), 3000);
     }
   };
-
-  // Demo request - scroll to contact form and pre-fill message as read-only
   const handleDemoRequest = () => {
+    // ---- New code: redirect to video ----
+    window.open(
+      "https://drive.google.com/file/d/1wJ6Gqwa8QyDLwn7Atr8laMsqi57bzBPm/view?usp=sharing",
+      "_blank"
+    );
+
+    // ---- Old demo request logic (commented out) ----
+    /*
     // Set demo request flag in sessionStorage
     sessionStorage.setItem('demoRequest', 'true');
     
@@ -495,6 +501,7 @@ export default function Index() {
     toast.info('Please fill in your details to request a demo', {
       duration: 5000,
     });
+    */
   };
 
   // Contact sales - redirects to contact form with sales type

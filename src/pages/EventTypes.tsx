@@ -75,7 +75,7 @@ const COLOR_OPTIONS = [
   { value: "#0891B2", name: "Cyan" },
 ];
 
-const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
+const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120,150,180,210,240,270,300];
 
 const CURRENCY_OPTIONS = [
   { value: "usd", label: "USD ($)", symbol: "$", flag: "🇺🇸" },
