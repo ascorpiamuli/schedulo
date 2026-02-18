@@ -17,7 +17,7 @@ import {
   Shield, Zap, Eye, EyeOff, Hash, Settings2, X, ChevronDown, Globe, Info,
   Fingerprint, LayoutGrid, List, ArrowUpDown, Filter, TrendingUp, Users,
   CalendarRange, BarChart3, ExternalLink, Loader2, CheckCircle, XCircle,
-  Mail, RefreshCw
+  Mail, RefreshCw, ShieldAlert
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ function slugify(s: string) {
 
 // ============================================
 // CONSTANTS & OPTIONS
-// ============================================
+//============================================
 
 const LOCATION_OPTIONS = [
   { value: "video", label: "Video Call", icon: Video, color: "text-[#1E3A8A]", bgColor: "bg-[#1E3A8A]/10" },
@@ -447,6 +447,13 @@ function CalendarConnection({ userId }: { userId: string }) {
     return `${minutes} minute${minutes > 1 ? 's' : ''}`;
   };
 
+  // Check if email is a Google domain
+  const checkGoogleEmail = (email: string) => {
+    const googleDomains = ['gmail.com', 'googlemail.com', 'google.com'];
+    const domain = email.split('@')[1]?.toLowerCase();
+    return googleDomains.includes(domain);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -461,300 +468,505 @@ function CalendarConnection({ userId }: { userId: string }) {
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        {/* Connection Status Banner */}
-        {isConnected ? (
-          <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-full">
-                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-green-700 dark:text-green-300">Calendar Connected</h4>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  All new bookings will be automatically synced to your Google Calendar
-                </p>
-              </div>
-              <Badge variant="outline" className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                Active
-              </Badge>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      {/* Google Verification Warning - Highlighted Container */}
+      <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 overflow-hidden w-full">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30 shrink-0">
+              <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
-          </div>
-        ) : (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-full">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 w-full min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 font-medium whitespace-nowrap">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Verification Pending
+                </Badge>
+                <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 whitespace-nowrap">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Sensitive Access
+                </Badge>
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-300">Calendar Not Connected</h4>
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Connect Google Calendar to automatically sync bookings and generate Meet links
+              
+              <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-300 mb-2 break-words">
+                ⚠️ Important: Google Verification in Progress
+              </h3>
+              
+              <div className="space-y-4 text-sm w-full">
+                <p className="text-amber-700 dark:text-amber-400 break-words">
+                  This app is currently requesting access to <strong>sensitive data in your Google Account</strong> (calendar events, meeting creation). 
+                  We are in the process of verifying this app with Google to ensure maximum security and compliance.
                 </p>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Main Connection UI */}
-        <div className="flex items-start gap-4">
-          <div className={cn(
-            "p-3 rounded-xl",
-            isConnected ? "bg-green-500/10" : "bg-[#1E3A8A]/10"
-          )}>
-            <Calendar className={cn(
-              "h-6 w-6",
-              isConnected ? "text-green-600" : "text-[#1E3A8A]"
-            )} />
-          </div>
-          
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-[#1E3A8A] mb-1">Google Calendar Integration</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {isConnected 
-                ? "Your calendar is connected. When guests book your events, they'll automatically appear with Google Meet links."
-                : "Connect to enable automatic calendar sync and video conferencing."}
-            </p>
-
-            {isConnected && tokenInfo && (
-              <div className="mb-4 space-y-2">
-                <div className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span className="text-muted-foreground">Connected since:</span>
-                  <span className="font-medium text-[#1E3A8A]">{new Date(tokenInfo.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Clock className="h-3 w-3 text-amber-500" />
-                  <span className="text-muted-foreground">Expires in:</span>
-                  <span className="font-medium text-[#1E3A8A]">{formatTimeUntilExpiry()}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <RefreshCw className="h-3 w-3 text-[#1E3A8A]" />
-                  <span className="text-muted-foreground">Auto-refresh:</span>
-                  <span className="font-medium text-[#1E3A8A]">Enabled (5 min before expiry)</span>
-                </div>
-                {tokenInfo.expires_at && new Date(tokenInfo.expires_at) < new Date() && (
-                  <div className="flex items-center gap-2 text-xs text-red-600">
-                    <AlertCircle className="h-3 w-3" />
-                    <span>Token expired - refreshing automatically...</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 w-full">
+                  <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800 w-full overflow-hidden">
+                    <h4 className="font-medium text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+                      <span className="break-words">Until Verification Completes:</span>
+                    </h4>
+                    <ul className="space-y-2 text-amber-700 dark:text-amber-400">
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-500 shrink-0">•</span>
+                        <span className="break-words">Google may show a warning screen about "unverified app"</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-500 shrink-0">•</span>
+                        <span className="break-words">Only Google Workspace (corporate) accounts can connect</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-500 shrink-0">•</span>
+                        <span className="break-words">Personal @gmail.com accounts are restricted by Google</span>
+                      </li>
+                    </ul>
                   </div>
+
+                  <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800 w-full overflow-hidden">
+                    <h4 className="font-medium text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                      <span className="break-words">Recommended Actions:</span>
+                    </h4>
+                    <ul className="space-y-2 text-amber-700 dark:text-amber-400">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-500 shrink-0">✓</span>
+                        <span className="break-words">Use a <strong>Google Workspace (company/school)</strong> email. If you have a Gmail account, you can proceed and if the warning appears, trust the developer and continue with the connection process.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-500 shrink-0">✓</span>
+                        <span className="break-words">After verification, all Google accounts will work and the warning screen will be removed.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-500 shrink-0">✓</span>
+                        <span className="break-words">Calendar sync provides automatic Meet links</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 w-full overflow-hidden">
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-blue-700 dark:text-blue-400 mb-1 break-words">
+                        Email Domain Requirement
+                      </p>
+                      <p className="text-sm text-blue-600 dark:text-blue-300 break-words">
+                        During this verification period, calendar sync works best with <strong>Google Workspace domains</strong> 
+                        (like @company.com, @school.edu). Personal @gmail.com accounts will be fully supported 
+                        once Google completes their app review (typically 3-5 business days). You can still proceed with the sync process and discard the warning and proceed. Your information will be safely handled.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 mt-2 p-3 bg-amber-100/50 dark:bg-amber-900/20 rounded-lg w-full">
+                  <Globe className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="text-xs text-amber-600 dark:text-amber-400 break-words">
+                    <strong>Why we recommend calendar sync:</strong> Automatically creates calendar events, generates Google Meet links, 
+                    sends email invites to guests, and keeps your schedule in sync without manual work.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Calendar Connection Card */}
+      <Card className="w-full overflow-hidden">
+        <CardContent className="p-4 sm:p-6">
+          {/* Connection Status Banner */}
+          {isConnected ? (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg w-full">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-full shrink-0">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-green-700 dark:text-green-300 break-words">Calendar Connected</h4>
+                  <p className="text-xs text-green-600 dark:text-green-400 break-words">
+                    All new bookings will be automatically synced to your Google Calendar
+                  </p>
+                </div>
+                <Badge variant="outline" className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 shrink-0">
+                  Active
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg w-full">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-full shrink-0">
+                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-300 break-words">Calendar Not Connected</h4>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 break-words">
+                    Connect Google Calendar to automatically sync bookings and generate Meet links
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Connection UI */}
+          <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
+            <div className={cn(
+              "p-3 rounded-xl shrink-0",
+              isConnected ? "bg-green-500/10" : "bg-[#1E3A8A]/10"
+            )}>
+              <Calendar className={cn(
+                "h-6 w-6",
+                isConnected ? "text-green-600" : "text-[#1E3A8A]"
+              )} />
+            </div>
+            
+            <div className="flex-1 min-w-0 w-full">
+              <h3 className="text-lg font-semibold text-[#1E3A8A] mb-1 break-words">Google Calendar Integration</h3>
+              <p className="text-sm text-muted-foreground mb-4 break-words">
+                {isConnected 
+                  ? "Your calendar is connected. When guests book your events, they'll automatically appear with Google Meet links."
+                  : "Connect to enable automatic calendar sync and video conferencing."}
+              </p>
+
+              {isConnected && tokenInfo && (
+                <div className="mb-4 space-y-2 w-full">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
+                    <span className="text-muted-foreground">Connected since:</span>
+                    <span className="font-medium text-[#1E3A8A] break-words">{new Date(tokenInfo.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Clock className="h-3 w-3 text-amber-500 shrink-0" />
+                    <span className="text-muted-foreground">Expires in:</span>
+                    <span className="font-medium text-[#1E3A8A] break-words">{formatTimeUntilExpiry()}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <RefreshCw className="h-3 w-3 text-[#1E3A8A] shrink-0" />
+                    <span className="text-muted-foreground">Auto-refresh:</span>
+                    <span className="font-medium text-[#1E3A8A] break-words">Enabled (5 min before expiry)</span>
+                  </div>
+                  {tokenInfo.expires_at && new Date(tokenInfo.expires_at) < new Date() && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      <span className="break-words">Token expired - refreshing automatically...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-3">
+                {isConnected ? (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={disconnectCalendar}
+                      className="gap-2 border-[#C2410C]/20 text-[#C2410C] hover:bg-[#C2410C]/10"
+                    >
+                      <XCircle className="h-4 w-4 shrink-0" />
+                      <span className="whitespace-nowrap">Disconnect</span>
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => refreshToken(false)}
+                      disabled={refreshing}
+                      className="gap-2 text-[#1E3A8A] hover:bg-[#1E3A8A]/10"
+                    >
+                      {refreshing ? (
+                        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 shrink-0" />
+                      )}
+                      <span className="whitespace-nowrap">{refreshing ? "Refreshing..." : "Refresh Now"}</span>
+                    </Button>
+                  </>
+                ) : (
+                  <Button 
+                    onClick={connectGoogleCalendar}
+                    disabled={connecting}
+                    className="gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
+                  >
+                    {connecting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                        <span className="whitespace-nowrap">Connecting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="h-4 w-4 shrink-0" />
+                        <span className="whitespace-nowrap">Connect Google Calendar</span>
+                      </>
+                    )}
+                  </Button>
                 )}
               </div>
-            )}
+            </div>
+          </div>
 
-            <div className="flex gap-3">
-              {isConnected ? (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={disconnectCalendar}
-                    className="gap-2 border-[#C2410C]/20 text-[#C2410C] hover:bg-[#C2410C]/10"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Disconnect
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => refreshToken(false)}
-                    disabled={refreshing}
-                    className="gap-2 text-[#1E3A8A] hover:bg-[#1E3A8A]/10"
-                  >
-                    {refreshing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    {refreshing ? "Refreshing..." : "Refresh Now"}
-                  </Button>
-                </>
-              ) : (
-                <Button 
-                  onClick={connectGoogleCalendar}
-                  disabled={connecting}
-                  className="gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
-                >
-                  {connecting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Calendar className="h-4 w-4" />
-                      Connect Google Calendar
-                    </>
-                  )}
-                </Button>
-              )}
+          {/* Benefits Grid */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t w-full">
+            <div className="flex items-start gap-2 min-w-0">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[#1E3A8A] break-words">Automatic Sync</p>
+                <p className="text-xs text-muted-foreground break-words">Bookings appear in your calendar instantly</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 min-w-0">
+              <Video className="h-4 w-4 text-[#1E3A8A] shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[#1E3A8A] break-words">Google Meet Links</p>
+                <p className="text-xs text-muted-foreground break-words">Auto-generated for every video call</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 min-w-0">
+              <Mail className="h-4 w-4 text-[#C2410C] shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[#1E3A8A] break-words">Email Invites</p>
+                <p className="text-xs text-muted-foreground break-words">Guests get calendar invites with links</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Benefits Grid */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-medium text-[#1E3A8A]">Automatic Sync</p>
-              <p className="text-xs text-muted-foreground">Bookings appear in your calendar instantly</p>
+          {/* Error Display */}
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg w-full overflow-hidden">
+              <p className="text-xs text-red-600 dark:text-red-400 break-words">{error}</p>
             </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <Video className="h-4 w-4 text-[#1E3A8A] shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-medium text-[#1E3A8A]">Google Meet Links</p>
-              <p className="text-xs text-muted-foreground">Auto-generated for every video call</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <Mail className="h-4 w-4 text-[#C2410C] shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-medium text-[#1E3A8A]">Email Invites</p>
-              <p className="text-xs text-muted-foreground">Guests get calendar invites with links</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg">
-            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
+
 // ============================================
 // TABLE VIEW COMPONENT
 // ============================================
 
 function TableView({ events, bookingCounts, onCopy, onEdit, onDuplicate, onToggle, onDelete }: any) {
-  return (
-    <div className="rounded-lg border bg-card overflow-hidden w-full">
-      <Table>
-        <TableHeader className="bg-[#1E3A8A]/5">
-          <TableRow>
-            <TableHead className="w-[250px] text-[#1E3A8A]">Event</TableHead>
-            <TableHead className="w-[100px] text-[#1E3A8A]">Duration</TableHead>
-            <TableHead className="w-[120px] text-[#1E3A8A]">Location</TableHead>
-            <TableHead className="w-[100px] text-[#1E3A8A]">Price</TableHead>
-            <TableHead className="w-[100px] text-[#1E3A8A]">Status</TableHead>
-            <TableHead className="w-[80px] text-[#1E3A8A]">Bookings</TableHead>
-            <TableHead className="w-[100px] text-right text-[#1E3A8A]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {events.map((event: EventType) => {
-            const LocationIcon = LOCATION_OPTIONS.find(l => l.value === event.location_type)?.icon || MapPin;
-            const currency = CURRENCY_OPTIONS.find(c => c.value === event.currency);
-            const bookingCount = bookingCounts?.[event.id] || 0;
-            
-            return (
-              <TableRow key={event.id} className={cn(!event.is_active && "opacity-60")}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: event.color }} />
-                    <div>
-                      <p className="font-medium text-sm text-[#1E3A8A]">{event.title}</p>
-                      <p className="text-xs text-muted-foreground">/{event.slug}</p>
+  const isMobile = useMediaQuery("(max-width: 640px)");
+
+  if (isMobile) {
+    return (
+      <div className="space-y-3 w-full">
+        {events.map((event: EventType) => {
+          const LocationIcon = LOCATION_OPTIONS.find(l => l.value === event.location_type)?.icon || MapPin;
+          const currency = CURRENCY_OPTIONS.find(c => c.value === event.currency);
+          const bookingCount = bookingCounts?.[event.id] || 0;
+          
+          return (
+            <Card key={event.id} className={cn(
+              "w-full overflow-hidden",
+              !event.is_active && "opacity-70"
+            )}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: event.color }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-[#1E3A8A] truncate">{event.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">/{event.slug}</p>
                     </div>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs border-[#1E3A8A]/20">
-                    <Clock className="h-3 w-3 mr-1 text-[#1E3A8A]" />
-                    {event.duration}min
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-36">
+                      <DropdownMenuItem onClick={() => onCopy(event.slug)} className="text-xs">
+                        <Copy className="h-3.5 w-3.5 mr-2" /> Copy link
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(event)} className="text-xs">
+                        <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onDuplicate(event)} className="text-xs">
+                        <Sparkles className="h-3.5 w-3.5 mr-2" /> Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onToggle(event)} className="text-xs">
+                        {event.is_active ? (
+                          <><EyeOff className="h-3.5 w-3.5 mr-2" /> Deactivate</>
+                        ) : (
+                          <><Eye className="h-3.5 w-3.5 mr-2" /> Activate</>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onDelete(event.id)} className="text-xs text-destructive">
+                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <Badge variant="secondary" className="gap-1 text-xs py-0.5">
+                    <Clock className="h-3 w-3 text-[#1E3A8A]" /> {event.duration}min
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <LocationIcon className="h-3.5 w-3.5" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} />
-                    <span className="text-xs capitalize">
-                      {event.location_type === "in_person" ? "In person" : event.location_type}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {(event.price_cents ?? 0) > 0 ? (
-                    <span className="text-xs font-medium text-[#C2410C]">
+                  <Badge variant="secondary" className="gap-1 text-xs py-0.5">
+                    <LocationIcon className="h-3 w-3" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} /> 
+                    <span className="capitalize">{event.location_type === "in_person" ? "In person" : event.location_type}</span>
+                  </Badge>
+                  {(event.price_cents ?? 0) > 0 && (
+                    <Badge variant="secondary" className="gap-1 text-xs py-0.5 bg-amber-500/10">
+                      <DollarSign className="h-3 w-3 text-[#C2410C]" /> 
                       {currency?.symbol}{((event.price_cents ?? 0) / 100).toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Free</span>
+                    </Badge>
                   )}
-                </TableCell>
-                <TableCell>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t">
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "h-2 w-2 rounded-full",
                       event.is_active ? "bg-green-500" : "bg-gray-300"
                     )} />
-                    <span className="text-xs">
+                    <span className="text-xs text-muted-foreground">
                       {event.is_active ? "Active" : "Inactive"}
                     </span>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={bookingCount > 0 ? "default" : "secondary"} 
-                    className={cn("text-xs", bookingCount > 0 && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90")}>
+                  <Badge variant={bookingCount > 0 ? "default" : "outline"} 
+                    className={cn("text-xs", bookingCount > 0 && "bg-[#1E3A8A]")}>
+                    <Users className="h-3 w-3 mr-1" />
                     {bookingCount}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-[#1E3A8A]" onClick={() => onCopy(event.slug)}>
-                            <Copy className="h-3.5 w-3.5" />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border bg-card overflow-x-auto w-full">
+      <div className="min-w-[800px]">
+        <Table>
+          <TableHeader className="bg-[#1E3A8A]/5">
+            <TableRow>
+              <TableHead className="w-[250px] text-[#1E3A8A]">Event</TableHead>
+              <TableHead className="w-[100px] text-[#1E3A8A]">Duration</TableHead>
+              <TableHead className="w-[120px] text-[#1E3A8A]">Location</TableHead>
+              <TableHead className="w-[100px] text-[#1E3A8A]">Price</TableHead>
+              <TableHead className="w-[100px] text-[#1E3A8A]">Status</TableHead>
+              <TableHead className="w-[80px] text-[#1E3A8A]">Bookings</TableHead>
+              <TableHead className="w-[100px] text-right text-[#1E3A8A]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {events.map((event: EventType) => {
+              const LocationIcon = LOCATION_OPTIONS.find(l => l.value === event.location_type)?.icon || MapPin;
+              const currency = CURRENCY_OPTIONS.find(c => c.value === event.currency);
+              const bookingCount = bookingCounts?.[event.id] || 0;
+              
+              return (
+                <TableRow key={event.id} className={cn(!event.is_active && "opacity-60")}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: event.color }} />
+                      <div>
+                        <p className="font-medium text-sm text-[#1E3A8A]">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">/{event.slug}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs border-[#1E3A8A]/20">
+                      <Clock className="h-3 w-3 mr-1 text-[#1E3A8A]" />
+                      {event.duration}min
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <LocationIcon className="h-3.5 w-3.5" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} />
+                      <span className="text-xs capitalize">
+                        {event.location_type === "in_person" ? "In person" : event.location_type}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {(event.price_cents ?? 0) > 0 ? (
+                      <span className="text-xs font-medium text-[#C2410C]">
+                        {currency?.symbol}{((event.price_cents ?? 0) / 100).toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Free</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "h-2 w-2 rounded-full",
+                        event.is_active ? "bg-green-500" : "bg-gray-300"
+                      )} />
+                      <span className="text-xs">
+                        {event.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={bookingCount > 0 ? "default" : "secondary"} 
+                      className={cn("text-xs", bookingCount > 0 && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90")}>
+                      {bookingCount}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-[#1E3A8A]" onClick={() => onCopy(event.slug)}>
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Copy booking link</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Copy booking link</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem onClick={() => onEdit(event)} className="text-xs hover:text-[#1E3A8A]">
-                          <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(event)} className="text-xs hover:text-[#C2410C]">
-                          <Sparkles className="h-3.5 w-3.5 mr-2" /> Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onToggle(event)} className="text-xs hover:text-[#1E3A8A]">
-                          {event.is_active ? (
-                            <>
-                              <EyeOff className="h-3.5 w-3.5 mr-2" /> Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-3.5 w-3.5 mr-2" /> Activate
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onDelete(event.id)} className="text-xs text-destructive">
-                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36">
+                          <DropdownMenuItem onClick={() => onEdit(event)} className="text-xs hover:text-[#1E3A8A]">
+                            <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDuplicate(event)} className="text-xs hover:text-[#C2410C]">
+                            <Sparkles className="h-3.5 w-3.5 mr-2" /> Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onToggle(event)} className="text-xs hover:text-[#1E3A8A]">
+                            {event.is_active ? (
+                              <>
+                                <EyeOff className="h-3.5 w-3.5 mr-2" /> Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-3.5 w-3.5 mr-2" /> Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onDelete(event.id)} className="text-xs text-destructive">
+                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
@@ -1035,38 +1247,38 @@ export default function EventTypes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Welcome Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1E3A8A] via-[#1E3A8A]/80 to-[#C2410C]/60 p-6 sm:p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1E3A8A] via-[#1E3A8A]/80 to-[#C2410C]/60 p-4 sm:p-6 md:p-8 w-full">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/5 rounded-full blur-2xl" />
         
-        <div className="relative">
+        <div className="relative w-full">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                <Sparkles className="h-3 w-3" />
+            <div className="space-y-2 min-w-0 flex-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm whitespace-nowrap">
+                <Sparkles className="h-3 w-3 shrink-0" />
                 <span>Event Management</span>
               </div>
-              <h1 className="font-['Space_Grotesk'] text-2xl sm:text-3xl md:text-4xl font-bold text-white">
+              <h1 className="font-['Space_Grotesk'] text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white break-words">
                 Manage your events
               </h1>
-              <p className="text-sm text-white/80 max-w-xl">
+              <p className="text-xs sm:text-sm text-white/80 max-w-xl break-words">
                 Create and customize how people book time with you. Events sync automatically with Google Calendar when connected.
               </p>
             </div>
             <Button 
               onClick={openCreate} 
-              size="lg"
-              className="bg-white text-[#1E3A8A] hover:bg-white/90 shadow-lg gap-2 w-full sm:w-auto"
+              size={isMobile ? "default" : "lg"}
+              className="bg-white text-[#1E3A8A] hover:bg-white/90 shadow-lg gap-2 w-full sm:w-auto shrink-0"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 shrink-0" />
               <span>Create Event</span>
             </Button>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-6">
             <StatsCard icon={Calendar} label="Total Events" value={stats.total} color="primary" />
             <StatsCard icon={CheckCircle2} label="Active" value={stats.active} color="green" />
             <StatsCard icon={Users} label="Total Bookings" value={stats.totalBookings} color="blue" />
@@ -1075,26 +1287,26 @@ export default function EventTypes() {
 
           {/* Performance Insights */}
           {stats.totalBookings > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-2 sm:mt-3">
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="h-4 w-4 text-white/60" />
+                    <BarChart3 className="h-4 w-4 text-white/60 shrink-0" />
                     <p className="text-xs text-white/60">Most Popular Event</p>
                   </div>
-                  <p className="text-base font-semibold text-white">{stats.mostBooked}</p>
+                  <p className="text-base font-semibold text-white break-words">{stats.mostBooked}</p>
                   <p className="text-xs text-white/60 mt-1">
                     {stats.avgBookingsPerEvent} avg bookings per event
                   </p>
                 </CardContent>
               </Card>
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <CalendarRange className="h-4 w-4 text-white/60" />
+                    <CalendarRange className="h-4 w-4 text-white/60 shrink-0" />
                     <p className="text-xs text-white/60">Calendar Sync</p>
                   </div>
-                  <p className="text-base font-semibold text-white">Google Calendar</p>
+                  <p className="text-base font-semibold text-white break-words">Google Calendar</p>
                   <p className="text-xs text-white/60 mt-1">
                     Connect in Calendar tab for auto-sync
                   </p>
@@ -1109,31 +1321,31 @@ export default function EventTypes() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-[400px] bg-[#1E3A8A]/10">
           <TabsTrigger value="events" className="gap-2 data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">
-            <Calendar className="h-4 w-4" />
-            Events
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="whitespace-nowrap">Events</span>
           </TabsTrigger>
           <TabsTrigger value="calendar" className="gap-2 data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">
-            <CalendarRange className="h-4 w-4" />
-            Calendar Sync
+            <CalendarRange className="h-4 w-4 shrink-0" />
+            <span className="whitespace-nowrap">Calendar Sync</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Events Tab */}
-        <TabsContent value="events" className="mt-6">
+        <TabsContent value="events" className="mt-6 w-full">
           {/* Controls Bar */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
               <Tabs defaultValue="all" className="w-full sm:w-auto" onValueChange={(v) => setFilterStatus(v as any)}>
                 <TabsList className="grid grid-cols-3 w-full sm:w-[300px] bg-[#1E3A8A]/10">
-                  <TabsTrigger value="all" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">All ({stats.total})</TabsTrigger>
-                  <TabsTrigger value="active" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">Active ({stats.active})</TabsTrigger>
-                  <TabsTrigger value="inactive" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white">Inactive ({stats.total - stats.active})</TabsTrigger>
+                  <TabsTrigger value="all" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white whitespace-nowrap">All ({stats.total})</TabsTrigger>
+                  <TabsTrigger value="active" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white whitespace-nowrap">Active ({stats.active})</TabsTrigger>
+                  <TabsTrigger value="inactive" className="text-xs data-[state=active]:bg-[#1E3A8A] data-[state=active]:text-white whitespace-nowrap">Inactive ({stats.total - stats.active})</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-              <div className="flex items-center gap-1 border rounded-lg p-1 bg-background">
+              <div className="flex items-center gap-1 border rounded-lg p-1 bg-background shrink-0">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="icon"
@@ -1160,14 +1372,14 @@ export default function EventTypes() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl bg-gradient-to-r from-[#1E3A8A]/5 to-[#C2410C]/10 border p-4 mb-4"
+              className="rounded-xl bg-gradient-to-r from-[#1E3A8A]/5 to-[#C2410C]/10 border p-4 mb-4 w-full overflow-hidden"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-[#1E3A8A]" />
+                  <Info className="h-4 w-4 text-[#1E3A8A] shrink-0" />
                   <h3 className="text-sm font-medium text-[#1E3A8A]">Quick Tips</h3>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowTips(false)}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowTips(false)}>
                   <X className="h-3 w-3" />
                 </Button>
               </div>
@@ -1193,15 +1405,15 @@ export default function EventTypes() {
 
           {/* Events Grid/Table */}
           {filteredEvents.length === 0 ? (
-            <Card className="text-center py-12">
+            <Card className="text-center py-8 sm:py-12 w-full">
               <CardContent className="space-y-4">
                 <div className="relative mx-auto w-fit">
                   <div className="absolute inset-0 bg-[#1E3A8A]/20 rounded-full blur-3xl" />
-                  <Calendar className="h-12 w-12 text-[#1E3A8A]/60 relative" />
+                  <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-[#1E3A8A]/60 relative" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1E3A8A]">No events found</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1E3A8A]">No events found</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     {filterStatus !== "all" 
                       ? `You don't have any ${filterStatus} events.` 
                       : "Create your first event to start accepting bookings."}
@@ -1217,6 +1429,7 @@ export default function EventTypes() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
+              className="w-full"
             >
               {viewMode === "table" && !isMobile ? (
                 <TableView 
@@ -1229,7 +1442,7 @@ export default function EventTypes() {
                   onDelete={handleDelete}
                 />
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {filteredEvents.map((event) => {
                     const LocationIcon = LOCATION_OPTIONS.find(l => l.value === event.location_type)?.icon || MapPin;
                     const currency = CURRENCY_OPTIONS.find(c => c.value === event.currency);
@@ -1237,15 +1450,15 @@ export default function EventTypes() {
                     
                     return (
                       <Card key={event.id} className={cn(
-                        "group relative overflow-hidden transition-all hover:shadow-lg border-t-4",
+                        "group relative overflow-hidden transition-all hover:shadow-lg border-t-4 w-full",
                         !event.is_active && "opacity-70"
                       )} style={{ borderTopColor: event.color }}>
-                        <CardContent className="p-5">
+                        <CardContent className="p-4 sm:p-5">
                           <div className="flex justify-between items-start gap-2 mb-3">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: event.color }} />
-                                <h3 className="font-semibold text-base truncate text-[#1E3A8A]">{event.title}</h3>
+                                <h3 className="font-semibold text-sm sm:text-base truncate text-[#1E3A8A]">{event.title}</h3>
                               </div>
                               <p className="text-xs text-muted-foreground font-mono truncate">/{event.slug}</p>
                             </div>
@@ -1283,22 +1496,22 @@ export default function EventTypes() {
                           </div>
 
                           {event.description && (
-                            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                            <p className="text-xs text-muted-foreground mb-3 line-clamp-2 break-words">
                               {event.description}
                             </p>
                           )}
 
                           <div className="flex flex-wrap gap-1.5 mb-4">
                             <Badge variant="secondary" className="gap-1 text-xs py-0.5 border-[#1E3A8A]/20">
-                              <Clock className="h-3 w-3 text-[#1E3A8A]" /> {event.duration}min
+                              <Clock className="h-3 w-3 text-[#1E3A8A] shrink-0" /> {event.duration}min
                             </Badge>
                             <Badge variant="secondary" className="gap-1 text-xs py-0.5 border-[#1E3A8A]/20">
-                              <LocationIcon className="h-3 w-3" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} /> 
-                              {event.location_type === "in_person" ? "In person" : event.location_type}
+                              <LocationIcon className="h-3 w-3 shrink-0" style={{ color: event.location_type === 'phone' ? '#C2410C' : '#1E3A8A' }} /> 
+                              <span className="capitalize">{event.location_type === "in_person" ? "In person" : event.location_type}</span>
                             </Badge>
                             {(event.price_cents ?? 0) > 0 && (
                               <Badge variant="secondary" className="gap-1 text-xs py-0.5 bg-amber-500/10 border-amber-500/20">
-                                <DollarSign className="h-3 w-3 text-[#C2410C]" /> 
+                                <DollarSign className="h-3 w-3 text-[#C2410C] shrink-0" /> 
                                 {currency?.symbol}{((event.price_cents ?? 0) / 100).toFixed(2)}
                               </Badge>
                             )}
@@ -1320,8 +1533,8 @@ export default function EventTypes() {
                                   <Badge variant={bookingCount > 0 ? "default" : "outline"} 
                                     className={cn("text-xs cursor-help", 
                                       bookingCount > 0 && "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white")}>
-                                    <Users className="h-3 w-3 mr-1" />
-                                    {bookingCount} {bookingCount === 1 ? 'booking' : 'bookings'}
+                                    <Users className="h-3 w-3 mr-1 shrink-0" />
+                                    <span className="whitespace-nowrap">{bookingCount} {bookingCount === 1 ? 'booking' : 'bookings'}</span>
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -1336,16 +1549,16 @@ export default function EventTypes() {
                   })}
 
                   {/* Create Card */}
-                  <Card onClick={openCreate} className="cursor-pointer border-dashed hover:border-[#1E3A8A] hover:bg-[#1E3A8A]/5 transition-all">
-                    <CardContent className="p-5 h-full flex flex-col items-center justify-center text-center min-h-[240px]">
-                      <div className="rounded-full bg-[#1E3A8A]/10 p-3 mb-3">
-                        <Plus className="h-5 w-5 text-[#1E3A8A]" />
+                  <Card onClick={openCreate} className="cursor-pointer border-dashed hover:border-[#1E3A8A] hover:bg-[#1E3A8A]/5 transition-all w-full">
+                    <CardContent className="p-4 sm:p-5 h-full flex flex-col items-center justify-center text-center min-h-[200px] sm:min-h-[240px]">
+                      <div className="rounded-full bg-[#1E3A8A]/10 p-2 sm:p-3 mb-2 sm:mb-3">
+                        <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-[#1E3A8A]" />
                       </div>
-                      <h3 className="font-semibold text-sm text-[#1E3A8A]">Create new event</h3>
-                      <p className="text-xs text-muted-foreground mt-1 max-w-[150px]">
+                      <h3 className="font-semibold text-xs sm:text-sm text-[#1E3A8A]">Create new event</h3>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-[120px] sm:max-w-[150px]">
                         Add another way for people to book with you
                       </p>
-                      <Badge variant="outline" className="mt-3 text-[10px] border-[#1E3A8A]/20">
+                      <Badge variant="outline" className="mt-2 sm:mt-3 text-[10px] border-[#1E3A8A]/20 whitespace-nowrap">
                         {stats.total} total · {stats.active} active
                       </Badge>
                     </CardContent>
@@ -1357,12 +1570,12 @@ export default function EventTypes() {
         </TabsContent>
 
         {/* Calendar Sync Tab */}
-        <TabsContent value="calendar" className="mt-6">
+        <TabsContent value="calendar" className="mt-6 w-full">
           {userId && <CalendarConnection userId={userId} />}
           
           {/* Pasbest Ventures Attribution */}
-          <div className="mt-4 text-center">
-            <p className="text-xs text-muted-foreground">
+          <div className="mt-4 text-center w-full">
+            <p className="text-xs text-muted-foreground break-words">
               A product of{" "}
               <a 
                 href="https://pasbestventures.com" 
@@ -1383,7 +1596,7 @@ export default function EventTypes() {
           "p-0 gap-0 overflow-hidden",
           isMobile ? "w-full max-w-full h-full max-h-full rounded-none" : "max-w-2xl"
         )}>
-          <div className="border-b px-6 py-4 flex items-center justify-between bg-background sticky top-0 z-50">
+          <div className="border-b px-4 sm:px-6 py-4 flex items-center justify-between bg-background sticky top-0 z-50">
             <DialogHeader className="p-0">
               <DialogTitle className="text-base font-['Space_Grotesk'] flex items-center gap-2">
                 <div className="rounded-lg bg-[#1E3A8A]/10 p-1.5">
@@ -1392,17 +1605,17 @@ export default function EventTypes() {
                 <span className="text-sm text-[#1E3A8A]">{editingId ? "Edit event" : "Create new event"}</span>
               </DialogTitle>
             </DialogHeader>
-            <Button variant="ghost" size="icon" onClick={() => setDialogOpen(false)} className="h-8 w-8 rounded-full hover:bg-muted">
+            <Button variant="ghost" size="icon" onClick={() => setDialogOpen(false)} className="h-8 w-8 rounded-full hover:bg-muted shrink-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="overflow-y-auto px-6 py-6" style={{ maxHeight: isMobile ? "calc(100vh - 140px)" : "calc(90vh - 140px)" }}>
+          <div className="overflow-y-auto px-4 sm:px-6 py-6" style={{ maxHeight: isMobile ? "calc(100vh - 140px)" : "calc(90vh - 140px)" }}>
             <div className="space-y-6">
               {/* Basic Info */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs">1</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs shrink-0">1</span>
                   Basic Information
                 </h3>
                 
@@ -1416,19 +1629,19 @@ export default function EventTypes() {
                         setForm(f => ({ ...f, title, slug: editingId ? f.slug : slugify(title) }));
                       }}
                       placeholder="e.g., 30-minute Discovery Call"
-                      className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                      className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-sm text-[#1E3A8A]">URL Slug <span className="text-red-500">*</span></Label>
-                    <div className="flex items-center">
-                      <span className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0">/</span>
+                    <div className="flex items-center w-full">
+                      <span className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0 shrink-0">/</span>
                       <Input
                         value={form.slug}
                         onChange={(e) => setForm(f => ({ ...f, slug: slugify(e.target.value) }))}
                         placeholder="30-min-call"
-                        className="h-10 rounded-l-none focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                        className="h-10 rounded-l-none focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                       />
                     </div>
                     <p className="text-xs text-muted-foreground break-all bg-muted/30 p-2 rounded">
@@ -1443,7 +1656,7 @@ export default function EventTypes() {
                       onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                       placeholder="Brief description of what this meeting is about..."
                       rows={3}
-                      className="resize-none focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                      className="resize-none focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                     />
                   </div>
                 </div>
@@ -1452,7 +1665,7 @@ export default function EventTypes() {
               {/* Meeting Settings */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs">2</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs shrink-0">2</span>
                   Meeting Settings
                 </h3>
                 
@@ -1461,7 +1674,7 @@ export default function EventTypes() {
                     <div className="space-y-2">
                       <Label className="text-sm text-[#1E3A8A]">Duration</Label>
                       <Select value={String(form.duration)} onValueChange={(v) => setForm(f => ({ ...f, duration: Number(v) }))}>
-                        <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20">
+                        <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1475,7 +1688,7 @@ export default function EventTypes() {
                     <div className="space-y-2">
                       <Label className="text-sm text-[#1E3A8A]">Location Type</Label>
                       <Select value={form.location_type} onValueChange={(v) => setForm(f => ({ ...f, location_type: v }))}>
-                        <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20">
+                        <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1498,7 +1711,7 @@ export default function EventTypes() {
                       value={form.location_details}
                       onChange={(e) => setForm(f => ({ ...f, location_details: e.target.value }))}
                       placeholder="Add meeting link, address, or phone number"
-                      className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                      className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                     />
                     <p className="text-xs text-muted-foreground">
                       {form.location_type === 'video' 
@@ -1515,9 +1728,9 @@ export default function EventTypes() {
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className="flex items-center gap-2 text-sm text-[#1E3A8A] w-full justify-center py-2.5 border rounded-lg hover:bg-[#1E3A8A]/5 transition-colors"
                 >
-                  <Settings2 className="h-4 w-4" />
+                  <Settings2 className="h-4 w-4 shrink-0" />
                   {showAdvanced ? "Hide" : "Show"} advanced options
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", showAdvanced && "rotate-180")} />
+                  <ChevronDown className={cn("h-4 w-4 transition-transform shrink-0", showAdvanced && "rotate-180")} />
                 </button>
 
                 {showAdvanced && (
@@ -1531,7 +1744,7 @@ export default function EventTypes() {
                           step={5}
                           value={form.buffer_before}
                           onChange={(e) => setForm(f => ({ ...f, buffer_before: Number(e.target.value) }))}
-                          className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                          className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1542,7 +1755,7 @@ export default function EventTypes() {
                           step={5}
                           value={form.buffer_after}
                           onChange={(e) => setForm(f => ({ ...f, buffer_after: Number(e.target.value) }))}
-                          className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                          className="h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                         />
                       </div>
                     </div>
@@ -1551,13 +1764,13 @@ export default function EventTypes() {
                       <div className="space-y-2">
                         <Label className="text-sm text-[#1E3A8A]">Price</Label>
                         <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1E3A8A]" />
+                          <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1E3A8A] shrink-0" />
                           <Input
                             type="text"
                             value={priceInput}
                             onChange={(e) => handlePriceChange(e.target.value)}
                             onBlur={handlePriceBlur}
-                            className="pl-9 h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20"
+                            className="pl-9 h-10 focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20 w-full"
                             placeholder="0.00"
                           />
                         </div>
@@ -1565,7 +1778,7 @@ export default function EventTypes() {
                       <div className="space-y-2">
                         <Label className="text-sm text-[#1E3A8A]">Currency</Label>
                         <Select value={form.currency} onValueChange={(v) => setForm(f => ({ ...f, currency: v }))}>
-                          <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20">
+                          <SelectTrigger className="h-10 focus:ring-[#1E3A8A]/20 w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1586,7 +1799,7 @@ export default function EventTypes() {
               {/* Appearance */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs">3</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs shrink-0">3</span>
                   Appearance & Status
                 </h3>
                 
@@ -1598,7 +1811,7 @@ export default function EventTypes() {
                         <button
                           key={c.value}
                           className={cn(
-                            "h-8 w-8 rounded-full transition-all hover:scale-110",
+                            "h-8 w-8 rounded-full transition-all hover:scale-110 shrink-0",
                             form.color === c.value && "ring-2 ring-[#1E3A8A] ring-offset-2"
                           )}
                           style={{ backgroundColor: c.value }}
@@ -1611,13 +1824,13 @@ export default function EventTypes() {
 
                   <div className="space-y-2">
                     <Label className="text-sm text-[#1E3A8A]">Event status</Label>
-                    <div className="flex items-center gap-3 h-10 px-3 rounded-lg border">
+                    <div className="flex items-center gap-3 h-10 px-3 rounded-lg border w-full">
                       <Switch 
                         checked={form.is_active} 
                         onCheckedChange={(v) => setForm(f => ({ ...f, is_active: v }))}
-                        className="data-[state=checked]:bg-[#1E3A8A]"
+                        className="data-[state=checked]:bg-[#1E3A8A] shrink-0"
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[#1E3A8A]">{form.is_active ? "Active" : "Inactive"}</p>
                         <p className="text-xs text-muted-foreground">
                           {form.is_active 
@@ -1631,12 +1844,12 @@ export default function EventTypes() {
               </div>
 
               {/* Calendar Sync Note */}
-              <div className="bg-[#1E3A8A]/5 rounded-lg p-4 border border-[#1E3A8A]/10">
+              <div className="bg-[#1E3A8A]/5 rounded-lg p-4 border border-[#1E3A8A]/10 w-full">
                 <div className="flex items-start gap-3">
                   <CalendarRange className="h-5 w-5 text-[#1E3A8A] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h4 className="text-sm font-medium text-[#1E3A8A] mb-1">Calendar Synchronization</h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground break-words">
                       When guests book this event, it will automatically appear in your Google Calendar 
                       {form.location_type === 'video' && ' with a Google Meet link generated automatically'}. 
                       Make sure you've connected your calendar in the Calendar Sync tab.
@@ -1648,7 +1861,7 @@ export default function EventTypes() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="border-t px-6 py-4 bg-background flex gap-3 sticky bottom-0">
+          <div className="border-t px-4 sm:px-6 py-4 bg-background flex gap-3 sticky bottom-0">
             <Button 
               onClick={handleSave} 
               className="flex-1 h-10 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
@@ -1663,7 +1876,7 @@ export default function EventTypes() {
                 editingId ? "Update Event" : "Create Event"
               )}
             </Button>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-6 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-4 sm:px-6 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5 shrink-0">
               Cancel
             </Button>
           </div>
