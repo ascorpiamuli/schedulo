@@ -1,4 +1,4 @@
-// pages/TeamManagement.tsx
+// pages/TeamManagement.tsx - Complete with proper loading indicators and enhanced UX
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
@@ -226,7 +226,27 @@ import {
   CheckSquare,
   Square,
   HelpCircle,
-  Info
+  Info,
+  Building,
+  UsersRound,
+  UserCog2,
+  UserPlus2,
+  UserMinus2,
+  UserCheck2,
+  UserX2,
+  Users2,
+  UsersRoundIcon,
+  BuildingIcon,
+  FolderTreeIcon as FolderTreeIcon2,
+  CalendarCheck,
+  CalendarClock,
+  CalendarRange,
+  CalendarX2,
+  CalendarPlus,
+  CalendarMinus,
+  CalendarSearch,
+  CalendarDaysIcon,
+  CalendarCheck2 as CalendarCheck2Icon
 } from "lucide-react";
 
 // ============================================
@@ -257,9 +277,12 @@ const itemVariants = {
 // UTILITY FUNCTIONS
 // ============================================
 
-const getInitials = (firstName?: string, lastName?: string, email?: string) => {
+const getInitials = (firstName?: string | null, lastName?: string | null, email?: string | null) => {
   if (firstName && lastName) {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  }
+  if (firstName) {
+    return firstName.charAt(0).toUpperCase();
   }
   if (email) {
     return email.charAt(0).toUpperCase();
@@ -298,6 +321,7 @@ const getStatusBadgeColor = (status: TeamStatus) => {
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -306,6 +330,7 @@ const formatDate = (dateString: string) => {
 };
 
 const formatDateTime = (dateString: string) => {
+  if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -314,18 +339,188 @@ const formatDateTime = (dateString: string) => {
     minute: '2-digit'
   });
 };
-
 const formatRelativeTime = (dateString: string) => {
+ 
+
+  if (!dateString) return "Never";
+
   const date = new Date(dateString);
   const now = new Date();
+
+  if (isNaN(date.getTime())) return "Invalid date";
+
+
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) return 'just now';
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  return formatDate(dateString);
+
+  // ==========================
+  // FIX FOR FUTURE TIMESTAMPS
+  // ==========================
+  if (diffInSeconds < 0) {
+    console.log("⚠️ Future timestamp detected. Returning formatted date.");
+    return formatDate(date); // your existing function
+  }
+
+  if (diffInSeconds < 60) return "just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+  const result = formatDate(date);
+  console.log("➡️ Returned:", result);
+  return result;
 };
+
+// ============================================
+// LOADING SPINNER COMPONENT
+// ============================================
+
+interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  color?: string;
+  className?: string;
+}
+
+const LoadingSpinner = ({ size = 'md', color = 'text-[#1E3A8A]', className }: LoadingSpinnerProps) => {
+  const sizeClasses = {
+    sm: 'h-3.5 w-3.5',
+    md: 'h-5 w-5',
+    lg: 'h-8 w-8'
+  };
+
+  return (
+    <Loader2 className={cn(
+      "animate-spin",
+      sizeClasses[size],
+      color,
+      className
+    )} />
+  );
+};
+
+// ============================================
+// LOADING BUTTON COMPONENT
+// ============================================
+
+interface LoadingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  loading?: boolean;
+  loadingText?: string;
+  children: React.ReactNode;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  icon?: React.ReactNode;
+}
+
+const LoadingButton = ({ 
+  loading, 
+  loadingText, 
+  children, 
+  variant = 'default',
+  size = 'default',
+  icon,
+  disabled,
+  className,
+  ...props 
+}: LoadingButtonProps) => {
+  const isIconOnly = size === 'icon';
+  
+  return (
+    <Button
+      variant={variant}
+      size={size}
+      disabled={disabled || loading}
+      className={cn(
+        "relative transition-all duration-200",
+        loading && "cursor-not-allowed opacity-80",
+        className
+      )}
+      {...props}
+    >
+      {loading ? (
+        <div className="flex items-center justify-center gap-2">
+          <LoadingSpinner size={isIconOnly ? 'sm' : 'sm'} color={variant === 'default' ? 'text-white' : undefined} />
+          {!isIconOnly && loadingText && <span>{loadingText}</span>}
+          {!isIconOnly && !loadingText && children}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-2">
+          {icon}
+          {children}
+        </div>
+      )}
+    </Button>
+  );
+};
+
+// ============================================
+// SKELETON LOADER COMPONENTS
+// ============================================
+
+const TableRowSkeleton = () => (
+  <TableRow className="border-[#1E3A8A]/10">
+    <TableCell>
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-[#1E3A8A]/10 animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-[#1E3A8A]/10 rounded animate-pulse" />
+          <div className="h-3 w-24 bg-[#1E3A8A]/5 rounded animate-pulse" />
+        </div>
+      </div>
+    </TableCell>
+    <TableCell className="hidden sm:table-cell">
+      <div className="h-6 w-20 bg-[#1E3A8A]/10 rounded-full animate-pulse" />
+    </TableCell>
+    <TableCell className="hidden md:table-cell">
+      <div className="h-4 w-24 bg-[#1E3A8A]/10 rounded animate-pulse" />
+    </TableCell>
+    <TableCell>
+      <div className="h-6 w-16 bg-[#1E3A8A]/10 rounded-full animate-pulse" />
+    </TableCell>
+    <TableCell className="hidden lg:table-cell">
+      <div className="h-4 w-20 bg-[#1E3A8A]/10 rounded animate-pulse" />
+    </TableCell>
+    <TableCell className="text-right">
+      <div className="h-8 w-8 bg-[#1E3A8A]/10 rounded ml-auto animate-pulse" />
+    </TableCell>
+  </TableRow>
+);
+
+const GridCardSkeleton = () => (
+  <Card className="bg-white/80 backdrop-blur-sm border-[#1E3A8A]/10">
+    <CardContent className="p-4 sm:p-6">
+      <div className="text-center">
+        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[#1E3A8A]/10 mx-auto animate-pulse" />
+        <div className="mt-2 sm:mt-3 space-y-2">
+          <div className="h-5 w-32 bg-[#1E3A8A]/10 rounded mx-auto animate-pulse" />
+          <div className="h-4 w-40 bg-[#1E3A8A]/5 rounded mx-auto animate-pulse" />
+        </div>
+        <div className="mt-2 sm:mt-3 flex items-center justify-center gap-2">
+          <div className="h-6 w-16 bg-[#1E3A8A]/10 rounded-full animate-pulse" />
+          <div className="h-6 w-20 bg-[#1E3A8A]/10 rounded-full animate-pulse" />
+        </div>
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#1E3A8A]/10">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-20 bg-[#1E3A8A]/10 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-[#1E3A8A]/10 rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const StatsCardSkeleton = () => (
+  <Card className="bg-white/50 backdrop-blur-sm border-[#1E3A8A]/10">
+    <CardContent className="p-4">
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-[#1E3A8A]/10 animate-pulse" />
+        <div className="space-y-2 flex-1">
+          <div className="h-4 w-24 bg-[#1E3A8A]/10 rounded animate-pulse" />
+          <div className="h-6 w-16 bg-[#1E3A8A]/10 rounded animate-pulse" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 // ============================================
 // STATS CARD COMPONENT (Dashboard Style)
@@ -346,6 +541,7 @@ interface StatsCardProps {
   footer?: string;
   onClick?: () => void;
   linkTo?: string;
+  loading?: boolean;
 }
 
 const StatsCard = ({ 
@@ -358,7 +554,8 @@ const StatsCard = ({
   progress,
   footer,
   onClick,
-  linkTo
+  linkTo,
+  loading
 }: StatsCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -422,14 +619,101 @@ const StatsCard = ({
     }
   };
 
-  const colors = colorClasses[color];
+  const colors = colorClasses[color] || colorClasses.blue;
   const Wrapper = linkTo ? 'a' : onClick ? 'button' : 'div';
   const wrapperProps = linkTo ? { href: linkTo } : onClick ? { onClick } : {};
+
+  if (loading) {
+    return <StatsCardSkeleton />;
+  }
+
+  if (isMobile) {
+    return (
+      <motion.div
+        variants={itemVariants}
+        whileTap={{ scale: 0.98 }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
+        className="w-full"
+      >
+        <Wrapper
+          {...wrapperProps}
+          className={cn(
+            "block rounded-xl border p-3 transition-all duration-300",
+            colors.bg,
+            colors.border,
+            (onClick || linkTo) && "cursor-pointer active:scale-95"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className={cn(
+                "rounded-lg p-2 shadow-sm shrink-0",
+                colors.icon
+              )}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">{title}</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold font-['Space_Grotesk'] truncate">{value}</h3>
+                  {trend && (
+                    <span className={cn(
+                      "text-[10px] font-medium whitespace-nowrap",
+                      trend.direction === 'up' ? 'text-green-600' : 
+                      trend.direction === 'down' ? 'text-red-600' : 'text-muted-foreground'
+                    )}>
+                      {trend.direction === 'up' && '↑'}
+                      {trend.direction === 'down' && '↓'}
+                      {trend.value}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {(onClick || linkTo) && (
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            )}
+          </div>
+
+          {description && (
+            <p className="mt-2 text-xs text-muted-foreground line-clamp-2 border-t pt-2">
+              {description}
+            </p>
+          )}
+
+          {progress !== undefined && (
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-muted-foreground">Progress</span>
+                <span className={cn("font-medium", colors.text)}>{progress}%</span>
+              </div>
+              <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className={cn("h-full rounded-full", colors.progress)}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 1, delay: 0.2 }}
+                />
+              </div>
+            </div>
+          )}
+
+          {footer && (
+            <div className="mt-2 border-t border-border/50 pt-2">
+              <p className="text-[10px] text-muted-foreground">{footer}</p>
+            </div>
+          )}
+        </Wrapper>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
       variants={itemVariants}
-      whileHover={!isMobile ? { y: -2 } : {}}
+      whileHover={{ y: -2 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       className="w-full"
@@ -458,7 +742,7 @@ const StatsCard = ({
             </div>
           </div>
           
-          {trend && !isMobile && (
+          {trend && (
             <div className={cn(
               "flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium shrink-0",
               trend.direction === 'up' ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' :
@@ -470,18 +754,6 @@ const StatsCard = ({
               <span>{trend.value}%</span>
               {trend.label && <span className="text-muted-foreground ml-1 hidden sm:inline">{trend.label}</span>}
             </div>
-          )}
-          
-          {trend && isMobile && (
-            <Badge variant="outline" className={cn(
-              "text-xs",
-              trend.direction === 'up' ? 'text-green-600' : 
-              trend.direction === 'down' ? 'text-red-600' : ''
-            )}>
-              {trend.direction === 'up' && '↑'}
-              {trend.direction === 'down' && '↓'}
-              {trend.value}%
-            </Badge>
           )}
         </div>
 
@@ -603,7 +875,7 @@ const MobileBottomNav = () => {
 };
 
 // ============================================
-// INVITE DIALOG COMPONENT
+// INVITE DIALOG COMPONENT - FIXED
 // ============================================
 
 interface InviteDialogProps {
@@ -617,7 +889,7 @@ interface InviteDialogProps {
 function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: InviteDialogProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<TeamRole>("member");
-  const [department, setDepartment] = useState<string>("");
+  const [department, setDepartment] = useState<string>("none");
   const [emailError, setEmailError] = useState<string | null>(null);
   const isMobile = useMediaQuery("(max-width: 640px)");
 
@@ -625,6 +897,15 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
+
+  useEffect(() => {
+    if (!open) {
+      setEmail("");
+      setRole("member");
+      setDepartment("none");
+      setEmailError(null);
+    }
+  }, [open]);
 
   const handleSubmit = () => {
     if (!email) {
@@ -639,14 +920,8 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
     onInvite({ 
       email, 
       role, 
-      department: department || undefined 
+      department: department === "none" ? undefined : department 
     });
-    
-    // Reset form
-    setEmail("");
-    setRole("member");
-    setDepartment("");
-    setEmailError(null);
   };
 
   return (
@@ -662,11 +937,12 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
             Invite Team Member
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Send an invitation to join your team. They'll receive an email with instructions.
+            Send an invitation to join {departments ? 'your organization' : 'your team'}. They'll receive an email with instructions.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
+          {/* Email Field */}
           <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="email" className="text-xs sm:text-sm text-[#1E3A8A]">
               Email Address <span className="text-red-500">*</span>
@@ -684,15 +960,17 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
                 "h-9 sm:h-10 text-sm focus:border-[#1E3A8A] focus:ring-[#1E3A8A]/20",
                 emailError && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
               )}
+              disabled={isLoading}
             />
             {emailError && (
               <p className="text-[10px] sm:text-xs text-red-500 mt-1">{emailError}</p>
             )}
           </div>
 
+          {/* Role Field */}
           <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="role" className="text-xs sm:text-sm text-[#1E3A8A]">Role</Label>
-            <Select value={role} onValueChange={(v: TeamRole) => setRole(v)}>
+            <Select value={role} onValueChange={(v: TeamRole) => setRole(v)} disabled={isLoading}>
               <SelectTrigger className="h-9 sm:h-10 text-sm focus:ring-[#1E3A8A]/20">
                 <SelectValue />
               </SelectTrigger>
@@ -737,30 +1015,35 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
             </Select>
           </div>
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="department" className="text-xs sm:text-sm text-[#1E3A8A]">Department (Optional)</Label>
-            <Select value={department} onValueChange={setDepartment}>
-              <SelectTrigger className="h-9 sm:h-10 text-sm focus:ring-[#1E3A8A]/20">
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments?.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.name}>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: dept.color }} />
-                      <span className="text-xs sm:text-sm">{dept.name}</span>
-                      {dept.member_count !== undefined && (
-                        <span className="text-[10px] sm:text-xs text-muted-foreground ml-auto">
-                          {dept.member_count}
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Department Field */}
+          {departments && departments.length > 0 && (
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="department" className="text-xs sm:text-sm text-[#1E3A8A]">Department (Optional)</Label>
+              <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
+                <SelectTrigger className="h-9 sm:h-10 text-sm focus:ring-[#1E3A8A]/20">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {departments?.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: dept.color }} />
+                        <span className="text-xs sm:text-sm">{dept.name}</span>
+                        {dept.member_count !== undefined && (
+                          <span className="text-[10px] sm:text-xs text-muted-foreground ml-auto">
+                            {dept.member_count}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
+          {/* Note */}
           <div className="bg-[#1E3A8A]/5 rounded-lg p-2 sm:p-3 border border-[#1E3A8A]/10">
             <p className="text-[10px] sm:text-xs text-muted-foreground">
               <strong className="text-[#1E3A8A]">Note:</strong> Invitations expire after 7 days. 
@@ -770,22 +1053,23 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5 text-sm h-9 sm:h-10">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            className="w-full sm:w-auto border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5 text-sm h-9 sm:h-10"
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-sm h-9 sm:h-10">
-            {isLoading ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
-                <span>Sending...</span>
-              </>
-            ) : (
-              <>
-                <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                <span>Send Invite</span>
-              </>
-            )}
-          </Button>
+          <LoadingButton
+            onClick={handleSubmit}
+            loading={isLoading}
+            loadingText="Sending..."
+            className="w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-sm h-9 sm:h-10"
+            icon={<Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+          >
+            Send Invite
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -793,7 +1077,7 @@ function InviteDialog({ open, onOpenChange, onInvite, departments, isLoading }: 
 }
 
 // ============================================
-// MEMBER DETAILS DIALOG COMPONENT
+// MEMBER DETAILS DIALOG COMPONENT - ENHANCED
 // ============================================
 
 interface MemberDetailsDialogProps {
@@ -804,6 +1088,8 @@ interface MemberDetailsDialogProps {
   onRemove?: (memberId: string) => void;
   canEdit?: boolean;
   departments?: Department[];
+  isUpdating?: boolean;
+  isRemoving?: boolean;
 }
 
 function MemberDetailsDialog({ 
@@ -813,7 +1099,9 @@ function MemberDetailsDialog({
   onUpdate,
   onRemove,
   canEdit,
-  departments
+  departments,
+  isUpdating,
+  isRemoving
 }: MemberDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
@@ -825,13 +1113,17 @@ function MemberDetailsDialog({
     if (member) {
       setEditForm({
         role: member.role,
-        department: member.department,
-        title: member.title,
-        phone: member.phone,
-        location: member.location,
-        bio: member.bio,
+        department: member.department || "",
+        title: member.title || "",
+        phone: member.phone || "",
+        location: member.location || "",
+        bio: member.bio || "",
         timezone: member.timezone,
-        notification_preferences: member.notification_preferences,
+        notification_preferences: member.notification_preferences || {
+          sms: true,
+          push: true,
+          email: true
+        },
         social_links: member.social_links || {}
       });
     }
@@ -860,6 +1152,10 @@ function MemberDetailsDialog({
     }
   };
 
+  const getDepartmentColor = (deptName: string) => {
+    return departments?.find(d => d.name === deptName)?.color || '#94a3b8';
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
@@ -877,9 +1173,14 @@ function MemberDetailsDialog({
           </DialogHeader>
           <div className="flex items-center gap-1 sm:gap-2">
             {canEdit && !isEditing && (
-              <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} className="h-7 w-7 sm:h-8 sm:w-8">
-                <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </Button>
+              <LoadingButton 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsEditing(true)} 
+                className="h-7 w-7 sm:h-8 sm:w-8"
+                loading={isUpdating}
+                icon={<Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+              />
             )}
             <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-7 w-7 sm:h-8 sm:w-8">
               <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -911,10 +1212,28 @@ function MemberDetailsDialog({
                       {getRoleIcon(member.role)}
                       <span className="ml-1">{member.role}</span>
                     </Badge>
+                    <Badge className={getStatusBadgeColor(member.status)}>
+                      {member.status}
+                    </Badge>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-                    {member.title || 'No title'} • {member.department || 'No department'}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {member.department ? (
+                      <>
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: getDepartmentColor(member.department) }} />
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          {member.department}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-muted-foreground">No department assigned</p>
+                    )}
+                    {member.title && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{member.title}</p>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -929,15 +1248,17 @@ function MemberDetailsDialog({
                     <span className="sm:hidden">Copy</span>
                   </Button>
                   {canEdit && (
-                    <Button
+                    <LoadingButton
                       size="sm"
                       variant="destructive"
                       className="gap-1 sm:gap-2 text-xs h-8 sm:h-9"
                       onClick={handleRemove}
+                      loading={isRemoving}
+                      loadingText=""
+                      icon={<Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                     >
-                      <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       <span className="hidden sm:inline">Remove</span>
-                    </Button>
+                    </LoadingButton>
                   )}
                 </div>
               </div>
@@ -1032,7 +1353,14 @@ function MemberDetailsDialog({
                   <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">Department</span>
-                      <span className="font-medium">{member.department || 'Not assigned'}</span>
+                      <span className="font-medium flex items-center gap-1">
+                        {member.department ? (
+                          <>
+                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: getDepartmentColor(member.department) }} />
+                            {member.department}
+                          </>
+                        ) : 'Not assigned'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">Title</span>
@@ -1149,7 +1477,7 @@ function MemberDetailsDialog({
             </TabsContent>
 
             <TabsContent value="availability" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
-              {/* Working Hours */}
+              {/* Working Hours - This would come from the availability table */}
               <Card>
                 <CardHeader className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-3">
                   <CardTitle className="text-xs sm:text-sm font-medium">Working Hours</CardTitle>
@@ -1219,7 +1547,7 @@ function MemberDetailsDialog({
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
-              {/* Recent Activity Feed */}
+              {/* Recent Activity Feed - Would come from team_activity table */}
               <Card>
                 <CardHeader className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-3">
                   <CardTitle className="text-xs sm:text-sm font-medium">Recent Activity</CardTitle>
@@ -1258,6 +1586,10 @@ export default function TeamManagement() {
   const [showMemberDetails, setShowMemberDetails] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [actionLoading, setActionLoading] = useState<{
+    type: 'invite' | 'resend' | 'cancel' | 'update' | 'remove' | null;
+    id?: string;
+  }>({ type: null });
 
   // Fetch data from hooks
   const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useTeamMembers();
@@ -1288,7 +1620,9 @@ export default function TeamManagement() {
       
       const matchesRole = roleFilter === "all" || member.role === roleFilter;
       const matchesStatus = statusFilter === "all" || member.status === statusFilter;
-      const matchesDepartment = departmentFilter === "all" || member.department === departmentFilter;
+      const matchesDepartment = departmentFilter === "all" || 
+        (departmentFilter === "unassigned" && !member.department) ||
+        member.department === departmentFilter;
       
       return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
     }) || [];
@@ -1307,6 +1641,7 @@ export default function TeamManagement() {
     const activeMembers = members?.filter(m => m.status === 'active').length || 0;
     const pendingInvites = invites?.length || 0;
     const totalDepartments = departments?.length || 0;
+    const unassignedMembers = members?.filter(m => !m.department).length || 0;
     const activePercentage = totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0;
 
     return {
@@ -1314,12 +1649,14 @@ export default function TeamManagement() {
       activeMembers,
       pendingInvites,
       totalDepartments,
+      unassignedMembers,
       activePercentage
     };
   }, [members, invites, departments]);
 
   // Handle invite
   const handleInvite = async (data: { email: string; role: TeamRole; department?: string }) => {
+    setActionLoading({ type: 'invite' });
     try {
       await createInvite.mutateAsync(data);
       toast({
@@ -1334,47 +1671,14 @@ export default function TeamManagement() {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
-    }
-  };
-
-  // Handle member update
-  const handleUpdateMember = async (memberId: string, data: any) => {
-    try {
-      await updateMember.mutateAsync({ memberId, ...data });
-      toast({
-        title: "✅ Member updated",
-        description: "Team member information has been updated",
-      });
-      refetchMembers();
-    } catch (error) {
-      toast({
-        title: "❌ Update failed",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle member removal
-  const handleRemoveMember = async (memberId: string) => {
-    try {
-      await removeMember.mutateAsync(memberId);
-      toast({
-        title: "✅ Member removed",
-        description: "Team member has been removed",
-      });
-      refetchMembers();
-    } catch (error) {
-      toast({
-        title: "❌ Removal failed",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
+    } finally {
+      setActionLoading({ type: null });
     }
   };
 
   // Handle resend invite
   const handleResendInvite = async (inviteId: string) => {
+    setActionLoading({ type: 'resend', id: inviteId });
     try {
       await resendInvite.mutateAsync(inviteId);
       toast({
@@ -1387,11 +1691,14 @@ export default function TeamManagement() {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+    } finally {
+      setActionLoading({ type: null });
     }
   };
 
   // Handle cancel invite
   const handleCancelInvite = async (inviteId: string) => {
+    setActionLoading({ type: 'cancel', id: inviteId });
     try {
       await cancelInvite.mutateAsync(inviteId);
       toast({
@@ -1405,6 +1712,50 @@ export default function TeamManagement() {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+    } finally {
+      setActionLoading({ type: null });
+    }
+  };
+
+  // Handle member update
+  const handleUpdateMember = async (memberId: string, data: any) => {
+    setActionLoading({ type: 'update', id: memberId });
+    try {
+      await updateMember.mutateAsync({ memberId, ...data });
+      toast({
+        title: "✅ Member updated",
+        description: "Team member information has been updated",
+      });
+      refetchMembers();
+    } catch (error) {
+      toast({
+        title: "❌ Update failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading({ type: null });
+    }
+  };
+
+  // Handle member removal
+  const handleRemoveMember = async (memberId: string) => {
+    setActionLoading({ type: 'remove', id: memberId });
+    try {
+      await removeMember.mutateAsync(memberId);
+      toast({
+        title: "✅ Member removed",
+        description: "Team member has been removed",
+      });
+      refetchMembers();
+    } catch (error) {
+      toast({
+        title: "❌ Removal failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading({ type: null });
     }
   };
 
@@ -1444,6 +1795,7 @@ export default function TeamManagement() {
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
                 {organization?.name || 'No organization'} • {filteredMembers.length} team {filteredMembers.length === 1 ? 'member' : 'members'}
+                {stats.unassignedMembers > 0 && ` • ${stats.unassignedMembers} unassigned`}
               </p>
             </div>
             
@@ -1458,11 +1810,17 @@ export default function TeamManagement() {
               </Button>
               
               {canInvite && (
-                <Button onClick={() => setShowInviteDialog(true)} size={isMobile ? "sm" : "default"} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-xs sm:text-sm h-8 sm:h-10">
-                  <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <LoadingButton 
+                  onClick={() => setShowInviteDialog(true)} 
+                  size={isMobile ? "sm" : "default"} 
+                  className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-xs sm:text-sm h-8 sm:h-10"
+                  icon={<UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                  loading={actionLoading.type === 'invite'}
+                  loadingText="Inviting..."
+                >
                   <span className="hidden sm:inline">Invite Member</span>
                   <span className="sm:hidden">Invite</span>
-                </Button>
+                </LoadingButton>
               )}
             </div>
           </div>
@@ -1512,8 +1870,14 @@ export default function TeamManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Depts</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {departments?.map(dept => (
-                    <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
+                    <SelectItem key={dept.id} value={dept.name}>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: dept.color }} />
+                        {dept.name}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1556,7 +1920,7 @@ export default function TeamManagement() {
             value={stats.totalDepartments}
             icon={Building2}
             trend={{ value: 5, direction: 'up', label: 'new dept' }}
-            description={`${stats.totalDepartments} active departments`}
+            description={`${stats.unassignedMembers} unassigned members`}
             color="purple"
           />
         </motion.div>
@@ -1618,7 +1982,38 @@ export default function TeamManagement() {
         </motion.div>
 
         {/* Team Members View */}
-        {filteredMembers.length === 0 ? (
+        {membersLoading ? (
+          // Loading Skeletons
+          viewMode === "table" ? (
+            <Card className="bg-white/80 backdrop-blur-sm border-[#1E3A8A]/10 overflow-hidden">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-[#1E3A8A]/10">
+                      <TableHead className="text-xs sm:text-sm">Member</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Role</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Last Active</TableHead>
+                      <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...Array(5)].map((_, i) => (
+                      <TableRowSkeleton key={i} />
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {[...Array(8)].map((_, i) => (
+                <GridCardSkeleton key={i} />
+              ))}
+            </div>
+          )
+        ) : filteredMembers.length === 0 ? (
           <motion.div variants={itemVariants}>
             <Card className="bg-white/80 backdrop-blur-sm border-[#1E3A8A]/10 py-8 sm:py-12">
               <CardContent className="text-center">
@@ -1632,10 +2027,16 @@ export default function TeamManagement() {
                     : "There are no team members to display. Contact an administrator to get invited."}
                 </p>
                 {canInvite && (
-                  <Button onClick={() => setShowInviteDialog(true)} size={isMobile ? "sm" : "default"} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-xs sm:text-sm">
-                    <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <LoadingButton 
+                    onClick={() => setShowInviteDialog(true)} 
+                    size={isMobile ? "sm" : "default"} 
+                    className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-xs sm:text-sm"
+                    icon={<UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                    loading={actionLoading.type === 'invite'}
+                    loadingText="Inviting..."
+                  >
                     Invite Your First Member
-                  </Button>
+                  </LoadingButton>
                 )}
               </CardContent>
             </Card>
@@ -1694,12 +2095,14 @@ export default function TeamManagement() {
                           {member.department ? (
                             <div className="flex items-center gap-2">
                               <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full" style={{ 
-                                backgroundColor: departments?.find(d => d.name === member.department)?.color || '#94a3b8' 
+                                backgroundColor: departments?.find(d => d.name === member.department)?.color ?? '#94a3b8' 
                               }} />
                               <span className="text-xs sm:text-sm truncate max-w-[100px]">{member.department}</span>
                             </div>
                           ) : (
-                            <span className="text-xs sm:text-sm text-muted-foreground">—</span>
+                            <Badge variant="outline" className="text-[10px] sm:text-xs border-gray-200 text-muted-foreground">
+                              Unassigned
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -1814,9 +2217,13 @@ export default function TeamManagement() {
                           {getRoleIcon(member.role)}
                           <span className="ml-1">{member.role}</span>
                         </Badge>
-                        {member.department && (
+                        {member.department ? (
                           <Badge variant="outline" className="text-[8px] sm:text-xs border-[#1E3A8A]/20">
                             {member.department}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[8px] sm:text-xs border-gray-200 text-muted-foreground">
+                            Unassigned
                           </Badge>
                         )}
                       </div>
@@ -1838,7 +2245,7 @@ export default function TeamManagement() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!membersLoading && filteredMembers.length > 0 && totalPages > 1 && (
           <motion.div variants={itemVariants} className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <p className="text-xs sm:text-sm text-muted-foreground">
@@ -1902,11 +2309,14 @@ export default function TeamManagement() {
         )}
 
         {/* Pending Invites Section */}
-        {invites && invites.length > 0 && (
+        {!invitesLoading && invites && invites.length > 0 && (
           <motion.div variants={itemVariants} className="mt-6 sm:mt-8">
             <h2 className="text-base sm:text-lg font-bold font-['Space_Grotesk'] text-[#1E3A8A] mb-3 sm:mb-4 flex items-center gap-2">
               <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
               Pending Invitations
+              {actionLoading.type === 'resend' && (
+                <LoadingSpinner size="sm" className="ml-2" />
+              )}
             </h2>
             <Card className="bg-white/80 backdrop-blur-sm border-[#1E3A8A]/10 overflow-hidden">
               <CardContent className="p-0 overflow-x-auto">
@@ -1958,28 +2368,50 @@ export default function TeamManagement() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1 sm:gap-2">
-                            <Button
+                            <LoadingButton
                               variant="ghost"
                               size="icon"
                               onClick={() => handleResendInvite(invite.id)}
                               className="h-7 w-7 sm:h-8 sm:w-8"
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            </Button>
-                            <Button
+                              loading={actionLoading.type === 'resend' && actionLoading.id === invite.id}
+                              icon={<RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                            />
+                            <LoadingButton
                               variant="ghost"
                               size="icon"
                               onClick={() => handleCancelInvite(invite.id)}
                               className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            </Button>
+                              loading={actionLoading.type === 'cancel' && actionLoading.id === invite.id}
+                              icon={<X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Loading state for invites */}
+        {invitesLoading && (
+          <motion.div variants={itemVariants} className="mt-6 sm:mt-8">
+            <div className="h-6 w-40 bg-[#1E3A8A]/10 rounded animate-pulse mb-4" />
+            <Card className="bg-white/80 backdrop-blur-sm border-[#1E3A8A]/10">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-[#1E3A8A]/10 animate-pulse" />
+                        <div className="h-4 w-32 bg-[#1E3A8A]/10 rounded animate-pulse" />
+                      </div>
+                      <div className="h-8 w-16 bg-[#1E3A8A]/10 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -2027,7 +2459,7 @@ export default function TeamManagement() {
         onOpenChange={setShowInviteDialog}
         onInvite={handleInvite}
         departments={departments}
-        isLoading={createInvite.isLoading}
+        isLoading={actionLoading.type === 'invite'}
       />
 
       <MemberDetailsDialog
@@ -2038,12 +2470,15 @@ export default function TeamManagement() {
         onRemove={handleRemoveMember}
         canEdit={canManage}
         departments={departments}
+        isUpdating={actionLoading.type === 'update' && actionLoading.id === selectedMember?.id}
+        isRemoving={actionLoading.type === 'remove' && actionLoading.id === selectedMember?.id}
       />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
 
-      <style jsx>{`
+      {/* CSS */}
+      <style>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;

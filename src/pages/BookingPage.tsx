@@ -1,4 +1,4 @@
-// BookingPage.tsx - Updated to handle all event types properly
+// BookingPage.tsx - Complete version with full team/department support
 import { useState, useMemo, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +30,8 @@ import {
   HelpCircle, BookOpen, Gift, Rocket, Target, ThumbsUp,
   Volume2, VolumeX, Mic, MicOff, Camera, CameraOff, Wifi, WifiOff,
   UserCog, Users2, CalendarRange, Clock12, Clock9, Clock10, Clock11,
-  CalendarCheck2, CalendarDays
+  CalendarCheck2, CalendarDays, Building, FolderTree, ShieldCheck,
+  RadioTower, Wifi as WifiIcon, WifiOff as WifiOffIcon
 } from "lucide-react";
 import { format, addMinutes, startOfDay, addDays, isSameDay, isToday, isTomorrow, differenceInMinutes, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,7 @@ interface Attendee {
   id?: string;
   name: string;
   email: string;
-  role?: string;
+  role?: 'host' | 'co-host' | 'presenter' | 'attendee' | 'guest' | 'observer';
   status?: 'pending' | 'confirmed' | 'cancelled';
 }
 
@@ -78,6 +79,19 @@ interface OneTimeEventData {
   date: string;
   start_time: string;
   end_time: string;
+}
+
+interface TeamMember {
+  id: string;
+  user_id: string;
+  role: 'host' | 'co-host' | 'presenter' | 'observer';
+  is_required: boolean;
+  profiles?: {
+    full_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+    email?: string;
+  };
 }
 
 // ============================================
@@ -222,6 +236,55 @@ function generateGoogleCalendarLink(
 // EVENT TYPE EXPLANATION COMPONENTS
 // ============================================
 
+const ScopeBadge = ({ scope, organization, department }: { scope: string, organization?: any, department?: any }) => {
+  const getScopeConfig = () => {
+    switch(scope) {
+      case 'personal':
+        return {
+          bg: "bg-blue-100",
+          text: "text-blue-700",
+          border: "border-blue-200",
+          icon: User,
+          label: "Personal Event"
+        };
+      case 'organization':
+        return {
+          bg: "bg-green-100",
+          text: "text-green-700",
+          border: "border-green-200",
+          icon: Users,
+          label: organization?.name || "Organization Event"
+        };
+      case 'department':
+        return {
+          bg: "bg-purple-100",
+          text: "text-purple-700",
+          border: "border-purple-200",
+          icon: Building2,
+          label: department?.name || "Department Event"
+        };
+      default:
+        return {
+          bg: "bg-gray-100",
+          text: "text-gray-700",
+          border: "border-gray-200",
+          icon: Calendar,
+          label: "Event"
+        };
+    }
+  };
+
+  const config = getScopeConfig();
+  const Icon = config.icon;
+
+  return (
+    <Badge className={cn(config.bg, config.text, config.border)}>
+      <Icon className="h-3 w-3 mr-1" />
+      {config.label}
+    </Badge>
+  );
+};
+
 const OneTimeEventDisplay = ({ event }: { event: any }) => {
   if (!event.one_time_event) return null;
   
@@ -264,68 +327,90 @@ const OneTimeEventDisplay = ({ event }: { event: any }) => {
 const MeetingLinkExplanation = ({ 
   eventType, 
   meetingProvider, 
-  hasPermanentLink 
+  hasPermanentLink,
+  isTeamEvent,
+  scope
 }: { 
-  eventType: 'one_on_one' | 'one_time' | 'flexible';
+  eventType: 'one_on_one' | 'one_time' | 'flexible' | 'team';
   meetingProvider: string;
   hasPermanentLink: boolean;
+  isTeamEvent?: boolean;
+  scope?: string;
 }) => {
   const providerLabel = getMeetingProviderLabel(meetingProvider);
   
-  const config = {
-    one_on_one: {
-      bg: "bg-blue-50 border-blue-200",
-      iconBg: "bg-blue-100",
-      icon: User,
-      iconColor: "text-blue-600",
-      title: "👤 1:1 Meeting - Unique Link",
-      description: "You're booking a 1:1 meeting. After confirmation, we'll generate a unique meeting link just for this booking.",
-      note: "🔒 Each booking gets its own private room for security and privacy."
-    },
-    one_time: {
-      bg: "bg-purple-50 border-purple-200",
-      iconBg: "bg-purple-100",
-      icon: CalendarCheck2,
-      iconColor: "text-purple-600",
-      title: "📅 One-Time Event - Fixed Time",
-      description: "This is a scheduled event at a fixed time. All attendees will use the same meeting link to join.",
-      note: hasPermanentLink ? "🔗 Permanent link for all attendees" : "📎 Meeting link will be provided"
-    },
-    flexible: {
-      bg: "bg-green-50 border-green-200",
-      iconBg: "bg-green-100",
-      icon: Users,
-      iconColor: "text-green-600",
-      title: "👥 Flexible Group Event",
-      description: "You can choose a time that works for you. All attendees will use the same meeting link.",
-      note: "👥 Perfect for team meetings where multiple people join the same call."
+  const getConfig = () => {
+    if (isTeamEvent || scope === 'organization' || scope === 'department') {
+      return {
+        bg: "bg-green-50 border-green-200",
+        iconBg: "bg-green-100",
+        icon: UsersRound,
+        iconColor: "text-green-600",
+        title: "👥 Team Event - Single Link for All",
+        description: "This is a team event. All attendees will use the same meeting link to join.",
+        note: hasPermanentLink ? "🔗 Permanent link for all attendees - perfect for recurring team meetings" : "📎 Meeting link will be provided"
+      };
+    }
+
+    switch(eventType) {
+      case 'one_on_one':
+        return {
+          bg: "bg-blue-50 border-blue-200",
+          iconBg: "bg-blue-100",
+          icon: User,
+          iconColor: "text-blue-600",
+          title: "👤 1:1 Meeting - Unique Link",
+          description: "You're booking a 1:1 meeting. After confirmation, we'll generate a unique meeting link just for this booking.",
+          note: "🔒 Each booking gets its own private room for security and privacy."
+        };
+      case 'one_time':
+        return {
+          bg: "bg-purple-50 border-purple-200",
+          iconBg: "bg-purple-100",
+          icon: CalendarCheck2,
+          iconColor: "text-purple-600",
+          title: "📅 One-Time Event - Fixed Time",
+          description: "This is a scheduled event at a fixed time. All attendees will use the same meeting link to join.",
+          note: hasPermanentLink ? "🔗 Permanent link for all attendees" : "📎 Meeting link will be provided"
+        };
+      default:
+        return {
+          bg: "bg-green-50 border-green-200",
+          iconBg: "bg-green-100",
+          icon: Users,
+          iconColor: "text-green-600",
+          title: "👥 Flexible Group Event",
+          description: "You can choose a time that works for you. All attendees will use the same meeting link.",
+          note: "👥 Perfect for team meetings where multiple people join the same call."
+        };
     }
   };
 
-  const { bg, iconBg, icon: Icon, iconColor, title, description, note } = config[eventType];
+  const config = getConfig();
+  const Icon = config.icon;
 
   return (
-    <div className={cn("p-4 rounded-lg border-2 mb-4", bg)}>
+    <div className={cn("p-4 rounded-lg border-2 mb-4", config.bg)}>
       <div className="flex items-start gap-3">
-        <div className={cn("rounded-full p-2", iconBg)}>
-          <Icon className={cn("h-5 w-5", iconColor)} />
+        <div className={cn("rounded-full p-2", config.iconBg)}>
+          <Icon className={cn("h-5 w-5", config.iconColor)} />
         </div>
         <div className="flex-1">
-          <h4 className="font-semibold text-sm mb-1" style={{ color: iconColor.replace('text-', 'text-') }}>
-            {title}
+          <h4 className="font-semibold text-sm mb-1" style={{ color: config.iconColor.replace('text-', 'text-') }}>
+            {config.title}
           </h4>
-          <p className="text-xs mb-2" style={{ color: iconColor.replace('text-', 'text-').replace('600', '700') }}>
-            {description}
+          <p className="text-xs mb-2" style={{ color: config.iconColor.replace('text-', 'text-').replace('600', '700') }}>
+            {config.description}
           </p>
           {hasPermanentLink && eventType !== 'one_on_one' && (
-            <div className="mt-2 p-2 bg-white rounded border" style={{ borderColor: iconColor.replace('text-', 'border-') }}>
-              <p className="text-[10px] font-mono truncate" style={{ color: iconColor }}>
+            <div className="mt-2 p-2 bg-white rounded border" style={{ borderColor: config.iconColor.replace('text-', 'border-') }}>
+              <p className="text-[10px] font-mono truncate" style={{ color: config.iconColor }}>
                 🔗 Permanent link for all attendees
               </p>
             </div>
           )}
-          <p className="text-[10px] mt-1" style={{ color: iconColor }}>
-            {note}
+          <p className="text-[10px] mt-1" style={{ color: config.iconColor }}>
+            {config.note}
           </p>
         </div>
       </div>
@@ -342,7 +427,8 @@ function TimeSlot({
   availableSpots,
   maxAttendees,
   isTeamSlot = false,
-  teamMembers = []
+  teamMembers = [],
+  scope
 }: { 
   time: string; 
   selected: boolean; 
@@ -352,9 +438,18 @@ function TimeSlot({
   maxAttendees?: number;
   isTeamSlot?: boolean;
   teamMembers?: any[];
+  scope?: string;
 }) {
   const period = getTimeOfDay(time);
   const isFull = availableSpots === 0;
+  
+  // Determine slot color based on scope
+  const getSlotColor = () => {
+    if (scope === 'organization') return "border-l-4 border-l-green-600";
+    if (scope === 'department') return "border-l-4 border-l-purple-600";
+    if (isTeamSlot) return "border-l-4 border-l-[#C2410C]";
+    return "";
+  };
   
   return (
     <TooltipProvider>
@@ -377,13 +472,15 @@ function TimeSlot({
                     ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                     : "hover:border-[#1E3A8A]/50 hover:bg-[#1E3A8A]/5 hover:text-[#1E3A8A]",
                 disabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:scale-100",
-                isTeamSlot && "border-l-4 border-l-[#C2410C]"
+                getSlotColor()
               )}
             >
               <div className="flex items-center gap-2">
                 {getTimeIcon(time)}
                 <span>{formatTimeDisplay(time)}</span>
                 {isTeamSlot && <UsersRound className="h-3 w-3 ml-1" />}
+                {scope === 'organization' && <Users className="h-3 w-3 ml-1 text-green-600" />}
+                {scope === 'department' && <Building2 className="h-3 w-3 ml-1 text-purple-600" />}
               </div>
               {selected && (
                 <motion.div
@@ -501,7 +598,9 @@ function AttendeeInput({
   onUpdate, 
   onRemove,
   canRemove,
-  isPrimary = false
+  isPrimary = false,
+  showRole = false,
+  roles = []
 }: { 
   attendee: Attendee; 
   index: number; 
@@ -509,6 +608,8 @@ function AttendeeInput({
   onRemove: (index: number) => void;
   canRemove: boolean;
   isPrimary?: boolean;
+  showRole?: boolean;
+  roles?: Array<{ value: string; label: string }>;
 }) {
   return (
     <motion.div 
@@ -538,6 +639,23 @@ function AttendeeInput({
             className="h-9 text-sm"
           />
         </div>
+        {showRole && (
+          <Select
+            value={attendee.role || 'attendee'}
+            onValueChange={(value: any) => onUpdate(index, 'role', value)}
+          >
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map((role) => (
+                <SelectItem key={role.value} value={role.value}>
+                  {role.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
       {canRemove && (
         <Button
@@ -690,7 +808,7 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
-  const [attendees, setAttendees] = useState<Attendee[]>([{ name: '', email: '' }]);
+  const [attendees, setAttendees] = useState<Attendee[]>([{ name: '', email: '', role: 'attendee' }]);
   const [guestNotes, setGuestNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [month, setMonth] = useState<Date>(new Date());
@@ -702,19 +820,43 @@ export default function BookingPage() {
   const [joinWaitingList, setJoinWaitingList] = useState(false);
   const [waitingListEmail, setWaitingListEmail] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
   const [eventMeetingLink, setEventMeetingLink] = useState<string | null>(null);
+  const [availableHosts, setAvailableHosts] = useState<any[]>([]);
 
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
   const { data: existingBookings } = useExistingBookings(username, dateStr);
   
   // Determine event type
-  const isOneOnOne = event?.max_attendees === 1 && !event?.team_event && event?.schedule_type !== 'one_time';
+  const isPersonal = event?.scope === 'personal';
+  const isOrganization = event?.scope === 'organization';
+  const isDepartment = event?.scope === 'department';
+  const isTeamEvent = isOrganization || isDepartment;
+  
+  const isOneOnOne = event?.max_attendees === 1 && isPersonal && event?.schedule_type !== 'one_time';
   const isOneTimeEvent = event?.schedule_type === 'one_time' && event?.one_time_event;
   const isFlexibleGroup = event?.max_attendees && event.max_attendees > 1 && !event?.one_time_event && !isOneOnOne;
   
-  const needsSingleMeetingLink = (isOneTimeEvent || isFlexibleGroup) && event?.generate_meeting_link;
+  const needsSingleMeetingLink = (isOneTimeEvent || isFlexibleGroup || isTeamEvent) && event?.generate_meeting_link;
+
+  // Role options based on event scope
+  const roleOptions = useMemo(() => {
+    if (isTeamEvent) {
+      return [
+        { value: 'host', label: 'Host' },
+        { value: 'co-host', label: 'Co-host' },
+        { value: 'presenter', label: 'Presenter' },
+        { value: 'observer', label: 'Observer' },
+        { value: 'attendee', label: 'Attendee' },
+        { value: 'guest', label: 'Guest' }
+      ];
+    }
+    return [
+      { value: 'attendee', label: 'Attendee' },
+      { value: 'guest', label: 'Guest' }
+    ];
+  }, [isTeamEvent]);
 
   // Set the date and time for one-time events
   useEffect(() => {
@@ -734,9 +876,9 @@ export default function BookingPage() {
 
   // Fetch team members if this is a team event
   useEffect(() => {
-    if (event?.team_event) {
+    if (isTeamEvent && event?.id) {
       const fetchTeamMembers = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('event_team_members')
           .select(`
             id,
@@ -746,19 +888,23 @@ export default function BookingPage() {
             profiles:user_id (
               full_name,
               username,
-              avatar_url
+              avatar_url,
+              email
             )
           `)
           .eq('event_type_id', event.id);
         
         if (data) {
           setTeamMembers(data);
+          // Auto-select required team members
+          const requiredIds = data.filter(m => m.is_required).map(m => m.user_id);
+          setSelectedTeamMembers(requiredIds);
         }
       };
       
       fetchTeamMembers();
     }
-  }, [event]);
+  }, [isTeamEvent, event]);
 
   // Generate available dates (for flexible events only)
   const availableDates = useMemo(() => {
@@ -835,8 +981,9 @@ export default function BookingPage() {
             slots.push({
               time: timeStr,
               availableSpots,
-              isTeamSlot: event.team_event,
-              conflictingBookings
+              isTeamSlot: isTeamEvent,
+              conflictingBookings,
+              scope: event.scope
             });
           }
         }
@@ -845,7 +992,7 @@ export default function BookingPage() {
     });
 
     return slots.sort((a, b) => a.time.localeCompare(b.time));
-  }, [selectedDate, availability, overrides, event, existingBookings, isOneTimeEvent]);
+  }, [selectedDate, availability, overrides, event, existingBookings, isOneTimeEvent, isTeamEvent]);
 
   const isDateAvailable = (date: Date) => {
     return availableDates.some(d => isSameDay(d, date));
@@ -865,7 +1012,7 @@ export default function BookingPage() {
 
   const handleAddAttendee = () => {
     if (attendees.length < (event?.max_attendees || 10)) {
-      setAttendees([...attendees, { name: '', email: '' }]);
+      setAttendees([...attendees, { name: '', email: '', role: isTeamEvent ? 'guest' : 'attendee' }]);
     }
   };
 
@@ -963,7 +1110,10 @@ export default function BookingPage() {
             eventTitle: event?.title,
             eventSlug: event?.slug,
             hostName: profile?.full_name,
-            hostJoinFirst: event?.host_join_first
+            hostJoinFirst: event?.host_join_first,
+            scope: event?.scope,
+            organizationId: event?.organization_id,
+            departmentId: event?.department_id
           }
         }
       });
@@ -1006,12 +1156,41 @@ export default function BookingPage() {
     }
 
     try {
-      // For group events and one-time events, use the host's permanent link
+      // For team events and one-time events, use the host's permanent link
       // For 1:1 meetings, we'll generate a unique link after booking
       let meetingLink = null;
       
-      if ((isFlexibleGroup || isOneTimeEvent) && event.permanent_meeting_link) {
+      if ((isFlexibleGroup || isOneTimeEvent || isTeamEvent) && event.permanent_meeting_link) {
         meetingLink = event.permanent_meeting_link;
+      }
+
+      // Determine the actual host (for team events, we might assign round-robin)
+      let hostUserId = username;
+      if (isTeamEvent && teamMembers.length > 0) {
+        // Simple round-robin: pick the team member with least bookings
+        // This could be enhanced with a proper round-robin algorithm
+        const { data: teamBookings } = await supabase
+          .from('bookings')
+          .select('host_user_id')
+          .eq('event_type_id', event.id)
+          .gte('start_time', new Date().toISOString());
+        
+        const bookingCounts: Record<string, number> = {};
+        teamMembers.forEach(m => bookingCounts[m.user_id] = 0);
+        teamBookings?.forEach((b: any) => {
+          if (bookingCounts[b.host_user_id] !== undefined) {
+            bookingCounts[b.host_user_id]++;
+          }
+        });
+        
+        // Find member with least bookings
+        let minBookings = Infinity;
+        teamMembers.forEach(m => {
+          if (bookingCounts[m.user_id] < minBookings) {
+            minBookings = bookingCounts[m.user_id];
+            hostUserId = m.user_id;
+          }
+        });
       }
 
       // Insert the main booking
@@ -1019,7 +1198,7 @@ export default function BookingPage() {
         .from("bookings")
         .insert({
           event_type_id: event.id,
-          host_user_id: username,
+          host_user_id: hostUserId,
           guest_name: validAttendees[0].name,
           guest_email: validAttendees[0].email,
           guest_notes: guestNotes || null,
@@ -1039,7 +1218,10 @@ export default function BookingPage() {
             meeting_provider: event.meeting_provider,
             host_join_first: event.host_join_first,
             schedule_type: event.schedule_type,
-            one_time_event: event.one_time_event
+            one_time_event: event.one_time_event,
+            scope: event.scope,
+            organization_id: event.organization_id,
+            department_id: event.department_id
           }
         })
         .select()
@@ -1065,14 +1247,9 @@ export default function BookingPage() {
       // Insert all attendees
       if (validAttendees.length > 0) {
         const attendeeInserts = validAttendees.map((attendee, index) => {
-          let role: string;
-          
-          if (index === 0) {
-            role = 'attendee'; // Primary booker
-          } else {
-            role = 'guest'; // Additional guests
-          }
+          let role = attendee.role || 'attendee';
 
+          // If this is a team member selected as host, set role appropriately
           if (selectedTeamMembers.includes(attendee.email)) {
             role = 'co-host';
           }
@@ -1117,7 +1294,7 @@ export default function BookingPage() {
             {
               body: {
                 bookingId: booking.id,
-                hostUserId: username,
+                hostUserId: hostUserId,
                 eventDetails: {
                   title: event.title,
                   description: event.description || '',
@@ -1128,9 +1305,10 @@ export default function BookingPage() {
                   locationDetails: meetingLink || event.location_details,
                   teamMembers: selectedTeamMembers,
                   meetingProvider: event.meeting_provider,
-                  isGroupEvent: isFlexibleGroup || isOneTimeEvent,
+                  isGroupEvent: isFlexibleGroup || isOneTimeEvent || isTeamEvent,
                   meetingLink: meetingLink,
-                  scheduleType: event.schedule_type
+                  scheduleType: event.schedule_type,
+                  scope: event.scope
                 }
               }
             }
@@ -1161,7 +1339,7 @@ export default function BookingPage() {
                 id: booking.id,
                 guest_name: attendee.name,
                 guest_email: attendee.email,
-                host_user_id: username,
+                host_user_id: hostUserId,
                 host_name: profile.full_name || 'Host',
                 host_email: profile.email,
                 event_title: event.title,
@@ -1177,8 +1355,9 @@ export default function BookingPage() {
                 attendees: validAttendees,
                 is_primary: attendee.email === validAttendees[0].email,
                 requires_approval: event.require_approval,
-                is_group_event: isFlexibleGroup || isOneTimeEvent,
-                schedule_type: event.schedule_type
+                is_group_event: isFlexibleGroup || isOneTimeEvent || isTeamEvent,
+                schedule_type: event.schedule_type,
+                scope: event.scope
               }
             }
           });
@@ -1227,19 +1406,8 @@ export default function BookingPage() {
   }
 
   const formattedPrice = event.price_cents ? formatCurrency(event.price_cents, event.currency) : null;
-  const isTeamEvent = event.team_event;
   const requiresApproval = event.require_approval;
   const hasWaitingList = event.waiting_list_enabled;
-
-  // Determine event type for display
-  let eventTypeBadge = null;
-  if (isOneOnOne) {
-    eventTypeBadge = { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-200", icon: User, label: "1:1 Meeting" };
-  } else if (isOneTimeEvent) {
-    eventTypeBadge = { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200", icon: CalendarCheck2, label: "One-Time Event" };
-  } else if (isFlexibleGroup) {
-    eventTypeBadge = { bg: "bg-green-100", text: "text-green-700", border: "border-green-200", icon: Users, label: "Flexible Group" };
-  }
 
   return (
     <motion.div
@@ -1294,7 +1462,7 @@ export default function BookingPage() {
                         </Avatar>
                         <div>
                           <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
-                            {isTeamEvent ? 'Hosted by team' : 'Hosted by'}
+                            {isTeamEvent ? 'Hosted by' : 'Hosted by'}
                           </p>
                           <p className="font-bold text-sm sm:text-lg text-[#1E3A8A]">
                             {isTeamEvent ? `${profile.full_name || 'Host'} & team` : profile.full_name || 'Host'}
@@ -1316,16 +1484,15 @@ export default function BookingPage() {
                           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-[#1E3A8A] to-[#C2410C] bg-clip-text text-transparent">
                             {event.title}
                           </h1>
-                          {eventTypeBadge && (
-                            <Badge className={cn(eventTypeBadge.bg, eventTypeBadge.text, eventTypeBadge.border)}>
-                              <eventTypeBadge.icon className="h-3 w-3 mr-1" />
-                              {eventTypeBadge.label}
-                            </Badge>
-                          )}
-                          {isTeamEvent && (
+                          <ScopeBadge 
+                            scope={event.scope} 
+                            organization={event.organization} 
+                            department={event.department} 
+                          />
+                          {isOneTimeEvent && (
                             <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                              <UsersRound className="h-3 w-3 mr-1" />
-                              Team Event
+                              <CalendarCheck2 className="h-3 w-3 mr-1" />
+                              One-Time
                             </Badge>
                           )}
                           {requiresApproval && (
@@ -1334,7 +1501,7 @@ export default function BookingPage() {
                               Requires Approval
                             </Badge>
                           )}
-                          {event.generate_meeting_link && (isFlexibleGroup || isOneTimeEvent) && (
+                          {event.generate_meeting_link && (isFlexibleGroup || isOneTimeEvent || isTeamEvent) && (
                             <Badge className="bg-green-100 text-green-700 border-green-200">
                               {getMeetingProviderIcon(event.meeting_provider)}
                               <span className="ml-1">One Link for All</span>
@@ -1355,6 +1522,7 @@ export default function BookingPage() {
                       </div>
 
                       {/* Event details grid */}
+                                            {/* Event details grid - continued */}
                       <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div className="col-span-2 sm:col-span-1 flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-[#1E3A8A]/10">
                           <div className="p-1.5 sm:p-2 rounded-lg bg-[#1E3A8A]/10">
@@ -1383,7 +1551,7 @@ export default function BookingPage() {
                           </div>
                         </div>
 
-                        {(isFlexibleGroup || isOneTimeEvent) && (
+                        {(isFlexibleGroup || isOneTimeEvent || isTeamEvent) && (
                           <div className="col-span-2 flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
                             <div className="p-1.5 sm:p-2 rounded-lg bg-purple-500/20">
                               <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
@@ -1392,6 +1560,24 @@ export default function BookingPage() {
                               <p className="text-[10px] sm:text-xs text-purple-600/80">Group Size</p>
                               <p className="text-xs sm:text-sm font-medium text-purple-600">
                                 {event.min_attendees} - {event.max_attendees} attendees
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Organization/Department info for team events */}
+                        {isTeamEvent && (
+                          <div className="col-span-2 flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                            <div className="p-1.5 sm:p-2 rounded-lg bg-green-500/20">
+                              {isOrganization ? <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" /> : <FolderTree className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />}
+                            </div>
+                            <div>
+                              <p className="text-[10px] sm:text-xs text-green-600/80">Team</p>
+                              <p className="text-xs sm:text-sm font-medium text-green-600">
+                                {isOrganization 
+                                  ? event.organization?.name || 'Organization Event'
+                                  : event.department?.name || 'Department Event'
+                                }
                               </p>
                             </div>
                           </div>
@@ -1406,7 +1592,7 @@ export default function BookingPage() {
                               <p className="text-[10px] sm:text-xs text-[#C2410C]/80">Price</p>
                               <p className="text-xs sm:text-sm font-medium text-[#C2410C]">
                                 {formattedPrice}
-                                {event.payment_required_per_attendee && (isFlexibleGroup || isOneTimeEvent) && (
+                                {event.payment_required_per_attendee && (isFlexibleGroup || isOneTimeEvent || isTeamEvent) && (
                                   <span className="text-xs text-muted-foreground ml-1">per person</span>
                                 )}
                               </p>
@@ -1426,9 +1612,11 @@ export default function BookingPage() {
                       {/* Meeting Link Info - Dynamic based on event type */}
                       {event.location_type === 'video' && event.generate_meeting_link && (
                         <MeetingLinkExplanation 
-                          eventType={isOneOnOne ? 'one_on_one' : isOneTimeEvent ? 'one_time' : 'flexible'}
+                          eventType={isOneOnOne ? 'one_on_one' : isOneTimeEvent ? 'one_time' : isTeamEvent ? 'team' : 'flexible'}
                           meetingProvider={event.meeting_provider}
                           hasPermanentLink={!!event.permanent_meeting_link}
+                          isTeamEvent={isTeamEvent}
+                          scope={event.scope}
                         />
                       )}
 
@@ -1491,15 +1679,16 @@ export default function BookingPage() {
                             { icon: CalendarIcon, title: "Calendar Integration", description: "Event saved to your calendar", color: "primary", badge: "iCal" },
                             { icon: Globe, title: "Timezone Smart", description: "Automatic timezone detection", color: "primary" },
                             { icon: CreditCard, title: "Secure Payments", description: "Pay with M-Pesa or card", color: "secondary", badge: "New" },
-                            { icon: Users, title: "Group Booking", description: (isFlexibleGroup || isOneTimeEvent) ? `Up to ${event.max_attendees} attendees` : "1-on-1 meeting", color: "primary" },
+                            { icon: Users, title: "Group Booking", description: (isFlexibleGroup || isOneTimeEvent || isTeamEvent) ? `Up to ${event.max_attendees} attendees` : "1-on-1 meeting", color: "primary" },
                             { icon: BellRing, title: "Reminders", description: "Get notified before the meeting", color: "primary" },
                             { icon: Timer, title: "Buffer Time", description: `${event.buffer_before || 0}min before, ${event.buffer_after || 0}min after`, color: "primary" },
                             { icon: Hourglass, title: "Waiting List", description: hasWaitingList ? "Join if fully booked" : "Book now", color: "primary" },
+                            { icon: ShieldCheck, title: "Team Event", description: isTeamEvent ? "Multiple hosts available" : "Single host", color: isTeamEvent ? "secondary" : "primary" },
                           ] : [
                             { icon: Shield, title: "Secure Booking", description: "Your information is protected", color: "primary" },
                             { icon: Zap, title: "Instant Confirmation", description: requiresApproval ? "Subject to approval" : "Get confirmation immediately", color: "primary" },
                             { icon: Video, title: "Video Ready", description: event.generate_meeting_link ? `Auto-generates ${getMeetingProviderLabel(event.meeting_provider)} links` : "Automatic meeting link", color: "primary", badge: "Auto" },
-                            { icon: Users, title: "Meeting Type", description: isOneOnOne ? "1:1 Meeting" : isOneTimeEvent ? "One-Time Event" : `Group (${event.min_attendees}-${event.max_attendees})`, color: "primary" },
+                            { icon: Users, title: "Meeting Type", description: isOneOnOne ? "1:1 Meeting" : isOneTimeEvent ? "One-Time Event" : isTeamEvent ? "Team Event" : `Group (${event.min_attendees}-${event.max_attendees})`, color: "primary" },
                           ]).map((feature) => (
                             <motion.div
                               key={feature.title}
@@ -1693,7 +1882,7 @@ export default function BookingPage() {
                                     </Badge>
                                     <Badge className="bg-[#1E3A8A]/10 text-[#1E3A8A] border-[#1E3A8A]/20 text-xs">
                                       {event.duration} min meeting
-                                      {isFlexibleGroup && ` · ${event.max_attendees} spots max`}
+                                      {(isFlexibleGroup || isTeamEvent) && ` · ${event.max_attendees} spots max`}
                                     </Badge>
                                   </div>
                                   
@@ -1715,6 +1904,7 @@ export default function BookingPage() {
                                           maxAttendees={event.max_attendees}
                                           isTeamSlot={slot.isTeamSlot}
                                           teamMembers={teamMembers}
+                                          scope={slot.scope}
                                         />
                                       </div>
                                     ))}
@@ -1723,7 +1913,7 @@ export default function BookingPage() {
                                   {hoveredSlot && (
                                     <div className="mt-3 text-xs text-center text-muted-foreground bg-white/50 dark:bg-slate-800/50 py-1 px-2 rounded-full">
                                       {getTimeOfDay(hoveredSlot)} slot · {event.duration} minutes
-                                      {isFlexibleGroup && selectedSlot?.availableSpots && (
+                                      {(isFlexibleGroup || isTeamEvent) && selectedSlot?.availableSpots && (
                                         <span> · {selectedSlot.availableSpots} spots left</span>
                                       )}
                                     </div>
@@ -1830,8 +2020,16 @@ export default function BookingPage() {
                       </div>
                     </div>
 
+                    {/* Team event indicator */}
+                    {isTeamEvent && (
+                      <div className="mt-3 flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded-lg">
+                        <UsersRound className="h-4 w-4" />
+                        <span>Team event - will be hosted by an available team member</span>
+                      </div>
+                    )}
+
                     {/* Available spots indicator */}
-                    {isFlexibleGroup && selectedSlot && (
+                    {(isFlexibleGroup || isTeamEvent) && selectedSlot && (
                       <div className="mt-3 flex items-center gap-2">
                         <div className={cn(
                           "h-2 w-2 rounded-full",
@@ -1844,21 +2042,21 @@ export default function BookingPage() {
                       </div>
                     )}
 
-                    {/* Meeting link info for group/one-time events */}
-                    {(isFlexibleGroup || isOneTimeEvent) && event.generate_meeting_link && event.permanent_meeting_link && (
-                      <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    {/* Meeting link info for group/team/one-time events */}
+                    {(isFlexibleGroup || isOneTimeEvent || isTeamEvent) && event.generate_meeting_link && event.permanent_meeting_link && (
+                      <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
                         <div className="flex items-center gap-2 mb-1">
                           {getMeetingProviderIcon(event.meeting_provider)}
-                          <span className="text-xs font-medium text-purple-800">
+                          <span className="text-xs font-medium text-green-800">
                             One Meeting Link for All Attendees
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-purple-700">
+                        <div className="flex items-center gap-2 text-[10px] text-green-700">
                           <Link2 className="h-3 w-3 shrink-0" />
                           <span className="font-mono truncate">{event.permanent_meeting_link}</span>
                         </div>
                         {event.host_join_first && (
-                          <p className="mt-1 text-[8px] text-purple-600">
+                          <p className="mt-1 text-[8px] text-green-600">
                             The host will join first. You'll be able to join once they start the meeting.
                           </p>
                         )}
@@ -1901,7 +2099,7 @@ export default function BookingPage() {
                     </div>
 
                     {/* Location info */}
-                    {event.location_type === 'video' && !isFlexibleGroup && !isOneTimeEvent && (
+                    {event.location_type === 'video' && !isFlexibleGroup && !isOneTimeEvent && !isTeamEvent && (
                       <div className="mt-3 pt-3 border-t border-[#1E3A8A]/10">
                         <div className="flex items-center gap-2 text-xs sm:text-sm">
                           <Video className="h-3 w-3 sm:h-4 sm:w-4 text-[#1E3A8A]" />
@@ -1962,7 +2160,7 @@ export default function BookingPage() {
                   </div>
 
                   {/* Attendees section */}
-                  {(isFlexibleGroup || isOneTimeEvent) && (
+                  {(isFlexibleGroup || isOneTimeEvent || isTeamEvent) && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1995,6 +2193,8 @@ export default function BookingPage() {
                             onRemove={handleRemoveAttendee}
                             canRemove={attendees.length > 1}
                             isPrimary={index === 0}
+                            showRole={isTeamEvent}
+                            roles={roleOptions}
                           />
                         ))}
                       </AnimatePresence>
@@ -2052,6 +2252,9 @@ export default function BookingPage() {
                           </div>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selected team members will be added as co-hosts to the meeting.
+                      </p>
                     </div>
                   )}
 
@@ -2103,7 +2306,7 @@ export default function BookingPage() {
                       disabled={
                         submitting ||
                         !attendees.some(a => a.name && a.email) ||
-                        ((isFlexibleGroup || isOneTimeEvent) && attendees.filter(a => a.name && a.email).length < (event.min_attendees || 1))
+                        ((isFlexibleGroup || isOneTimeEvent || isTeamEvent) && attendees.filter(a => a.name && a.email).length < (event.min_attendees || 1))
                       }
                     >
                       {submitting ? (
@@ -2157,6 +2360,9 @@ export default function BookingPage() {
                       : isOneOnOne
                         ? "A unique meeting link has been generated and sent to all attendees."
                         : "The meeting link has been shared with all attendees."}
+                    {isTeamEvent && !requiresApproval && (
+                      <span className="block mt-1 text-green-600">A team member will host your meeting.</span>
+                    )}
                   </p>
 
                   <div className="bg-gradient-to-br from-[#1E3A8A]/5 to-[#C2410C]/5 rounded-lg sm:rounded-xl p-4 sm:p-6 text-left space-y-3 sm:space-y-4 mb-6 sm:mb-8 border border-[#1E3A8A]/10">
@@ -2164,7 +2370,7 @@ export default function BookingPage() {
                       <div className="h-2 w-2 sm:h-3 sm:w-3 rounded-full" style={{ backgroundColor: event.color || "#1E3A8A" }} />
                       <span className="font-semibold text-[#1E3A8A]">{event.title}</span>
                       {isTeamEvent && (
-                        <Badge className="bg-purple-100 text-purple-700 text-[8px]">
+                        <Badge className="bg-green-100 text-green-700 text-[8px]">
                           Team Event
                         </Badge>
                       )}
@@ -2211,8 +2417,29 @@ export default function BookingPage() {
                                   Primary
                                 </Badge>
                               )}
+                              {attendee.role && attendee.role !== 'attendee' && (
+                                <Badge className="bg-purple-100 text-purple-700 text-[8px]">
+                                  {attendee.role}
+                                </Badge>
+                              )}
                             </div>
                           ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Team members selected */}
+                    {isTeamEvent && selectedTeamMembers.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-[#1E3A8A]/10">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">Team Members</p>
+                        <div className="flex flex-wrap gap-1">
+                          {teamMembers
+                            .filter(m => selectedTeamMembers.includes(m.user_id))
+                            .map((member) => (
+                              <Badge key={member.id} className="bg-green-100 text-green-700">
+                                {member.profiles?.full_name} ({member.role})
+                              </Badge>
+                            ))}
                         </div>
                       </div>
                     )}
@@ -2259,7 +2486,7 @@ export default function BookingPage() {
                             Join
                           </Button>
                         </div>
-                        {(isFlexibleGroup || isOneTimeEvent) && event.host_join_first && (
+                        {(isFlexibleGroup || isOneTimeEvent || isTeamEvent) && event.host_join_first && (
                           <p className="mt-1 text-[8px] text-amber-600">
                             The host will join first. You can join once they start the meeting.
                           </p>

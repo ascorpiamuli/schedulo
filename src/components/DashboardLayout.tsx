@@ -124,7 +124,7 @@ const navigation = [
     title: "TEAM",
     items: [
       { name: "Team Overview", href: "/dashboard/team", icon: Users },
-      { name: "Members", href: "/dashboard/team/members", icon: UserPlus },
+      //{ name: "Members", href: "/dashboard/team/members", icon: UserPlus },
       { name: "Departments", href: "/dashboard/team/departments", icon: Building2 },
       { name: "Team Calendar", href: "/dashboard/team/calendar", icon: CalendarRange },
       { name: "Analytics", href: "/dashboard/team/analytics", icon: BarChart3 },

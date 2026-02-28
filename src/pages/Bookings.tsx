@@ -1,9 +1,9 @@
-// Bookings.tsx - Enhanced with meeting provider and schedule type support
+// Bookings.tsx - Enhanced with proper event type support and team bookings
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { sendBookingEmail } from "@/lib/emails";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBookings, useCancelBooking, useBooking, Booking } from "@/hooks/use-bookings";
+import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -40,7 +40,11 @@ import {
   FolderX, FolderCheck, FolderClock, FolderCloud, FolderCode, FolderDiff,
   FolderDot, FolderKanban, FolderOpenDot, FolderRoot, FolderTreeIcon,
   FolderUpIcon, FolderDownIcon, CalendarCheck2, CalendarDays as CalendarDaysIcon,
-  CalendarRange, CalendarClock as CalendarClockIcon
+  CalendarRange, CalendarClock as CalendarClockIcon, UsersRound, UserCheck,
+  UserPlus, UserMinus, UserCog, Users2, Building, Building2 as BuildingIcon,
+  Shield, ShieldCheck, ShieldAlert, RadioTower, Wifi, WifiOff,
+  Mic, MicOff, Camera, CameraOff, Volume2, VolumeX,
+  Headphones, HeadphonesOff, Monitor, MonitorOff
 } from "lucide-react";
 import { format, isPast, isToday, isTomorrow, parseISO, differenceInDays, differenceInHours, isThisWeek, isThisMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -73,7 +77,8 @@ const MEETING_PROVIDERS = {
     color: "text-blue-600",
     bgColor: "bg-blue-100",
     borderColor: "border-blue-200",
-    lightBg: "bg-blue-50"
+    lightBg: "bg-blue-50",
+    textColor: "text-blue-700"
   },
   zoom: {
     label: "Zoom",
@@ -81,7 +86,8 @@ const MEETING_PROVIDERS = {
     color: "text-blue-700",
     bgColor: "bg-blue-100",
     borderColor: "border-blue-200",
-    lightBg: "bg-blue-50"
+    lightBg: "bg-blue-50",
+    textColor: "text-blue-800"
   },
   microsoft_teams: {
     label: "Microsoft Teams",
@@ -89,7 +95,8 @@ const MEETING_PROVIDERS = {
     color: "text-purple-600",
     bgColor: "bg-purple-100",
     borderColor: "border-purple-200",
-    lightBg: "bg-purple-50"
+    lightBg: "bg-purple-50",
+    textColor: "text-purple-700"
   },
   custom: {
     label: "Custom Link",
@@ -97,7 +104,42 @@ const MEETING_PROVIDERS = {
     color: "text-gray-600",
     bgColor: "bg-gray-100",
     borderColor: "border-gray-200",
-    lightBg: "bg-gray-50"
+    lightBg: "bg-gray-50",
+    textColor: "text-gray-700"
+  }
+};
+
+// ============================================
+// SCOPE CONFIGURATION
+// ============================================
+
+const SCOPE_CONFIG = {
+  personal: {
+    label: "Personal",
+    icon: User,
+    color: "blue",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-700",
+    borderColor: "border-blue-200",
+    lightBg: "bg-blue-50"
+  },
+  organization: {
+    label: "Organization",
+    icon: Users,
+    color: "green",
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+    borderColor: "border-green-200",
+    lightBg: "bg-green-50"
+  },
+  department: {
+    label: "Department",
+    icon: Building2,
+    color: "purple",
+    bgColor: "bg-purple-100",
+    textColor: "text-purple-700",
+    borderColor: "border-purple-200",
+    lightBg: "bg-purple-50"
   }
 };
 
@@ -155,9 +197,9 @@ function getLocationIcon(type: string) {
 
 function getLocationLabel(type: string) {
   switch(type) {
-    case 'video': return 'Video';
-    case 'phone': return 'Phone';
-    case 'in_person': return 'In person';
+    case 'video': return 'Video Call';
+    case 'phone': return 'Phone Call';
+    case 'in_person': return 'In Person';
     default: return type;
   }
 }
@@ -183,6 +225,21 @@ function getMeetingProviderIcon(provider: string) {
 
 function getMeetingProviderLabel(provider: string) {
   return getMeetingProviderInfo(provider).label;
+}
+
+function getScopeConfig(scope: string) {
+  return SCOPE_CONFIG[scope as keyof typeof SCOPE_CONFIG] || SCOPE_CONFIG.personal;
+}
+
+function getScopeIcon(scope: string) {
+  const config = getScopeConfig(scope);
+  const Icon = config.icon;
+  return <Icon className={cn("h-4 w-4", config.textColor)} />;
+}
+
+function getScopeBadge(scope: string) {
+  const config = getScopeConfig(scope);
+  return cn(config.bgColor, config.textColor, config.borderColor);
 }
 
 function getHourIcon(hour: number) {
@@ -240,7 +297,6 @@ function getScheduleTypeLabel(type: string) {
 function getPopularTimeSlot(bookings: Booking[]) {
   if (!bookings || bookings.length === 0) return '9-11 AM';
   
-  // Group bookings by hour
   const hourCounts: Record<number, number> = {};
   
   bookings.forEach(booking => {
@@ -248,9 +304,8 @@ function getPopularTimeSlot(bookings: Booking[]) {
     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
   });
   
-  // Find the most popular hour
   let maxCount = 0;
-  let popularHour = 9; // Default
+  let popularHour = 9;
   
   Object.entries(hourCounts).forEach(([hour, count]) => {
     if (count > maxCount) {
@@ -259,7 +314,6 @@ function getPopularTimeSlot(bookings: Booking[]) {
     }
   });
   
-  // Format as time range
   const startHour = popularHour;
   const endHour = popularHour + 1;
   
@@ -274,7 +328,7 @@ function getPopularTimeSlot(bookings: Booking[]) {
 }
 
 // ============================================
-// STATS CARD COMPONENT (Dashboard Style)
+// STATS CARD COMPONENT
 // ============================================
 
 interface StatsCardProps {
@@ -372,7 +426,6 @@ const StatsCard = ({
   const Wrapper = linkTo ? Link : onClick ? 'button' : 'div';
   const wrapperProps = linkTo ? { to: linkTo } : onClick ? { onClick } : {};
 
-  // Mobile-optimized layout
   if (isMobile) {
     return (
       <motion.div
@@ -456,7 +509,6 @@ const StatsCard = ({
     );
   }
 
-  // Desktop layout
   return (
     <motion.div
       variants={itemVariants}
@@ -628,10 +680,10 @@ const MobileBottomNav = () => {
 };
 
 // ============================================
-// MEETING LINK COMPONENT - Enhanced with provider info
+// MEETING LINK COMPONENT
 // ============================================
 
-function MeetingLinkDisplay({ link, provider = 'google_meet', label = "Meeting Link" }: { link?: string | null; provider?: string; label?: string }) {
+function MeetingLinkDisplay({ link, provider = 'google_meet', label = "Meeting Link", isPermanent = false }: { link?: string | null; provider?: string; label?: string; isPermanent?: boolean }) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const providerInfo = getMeetingProviderInfo(provider);
@@ -650,7 +702,10 @@ function MeetingLinkDisplay({ link, provider = 'google_meet', label = "Meeting L
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Icon className={cn("h-4 w-4", providerInfo.color)} />
-        <p className="text-xs font-medium text-muted-foreground">{providerInfo.label} {label}</p>
+        <p className="text-xs font-medium text-muted-foreground">
+          {providerInfo.label} {label}
+          {isPermanent && <span className="ml-1 text-green-600">(Permanent)</span>}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex-1 bg-muted/30 rounded-lg p-2 sm:p-3 border text-xs sm:text-sm font-mono truncate text-[#1E3A8A]">
@@ -846,7 +901,7 @@ function Pagination({ currentPage, totalPages, onPageChange, pageSize, onPageSiz
 }
 
 // ============================================
-// BOOKING DETAILS MODAL - Enhanced with meeting provider and schedule type
+// BOOKING DETAILS MODAL - Enhanced with full event type support
 // ============================================
 
 function BookingDetailsModal({ 
@@ -874,19 +929,6 @@ function BookingDetailsModal({
         description: "The booking has been successfully cancelled."
       });
 
-      sendBookingEmail("cancellation", {
-        id: booking.id,
-        guest_name: booking.guest_name,
-        guest_email: booking.guest_email,
-        host_name: "",
-        event_title: booking.event_types?.title || "Meeting",
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        duration: booking.event_types?.duration || 30,
-        location_type: booking.event_types?.location_type || "video",
-        guest_timezone: booking.guest_timezone,
-      });
-
       onOpenChange(false);
       setShowCancelConfirm(false);
     } catch (err: any) {
@@ -906,8 +948,15 @@ function BookingDetailsModal({
   const providerInfo = getMeetingProviderInfo(meetingProvider);
   const ProviderIcon = providerInfo.icon;
 
-  // Determine if this is a one-time event
+  // Get scope info
+  const scope = booking?.event_types?.scope || 'personal';
+  const scopeConfig = getScopeConfig(scope);
+  const ScopeIcon = scopeConfig.icon;
+
+  // Determine if this is a team event
+  const isTeamEvent = scope === 'organization' || scope === 'department';
   const isOneTimeEvent = booking?.event_types?.schedule_type === 'one_time';
+  const isPermanentLink = booking?.event_types?.permanent_meeting_link === booking?.meeting_link;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -958,10 +1007,14 @@ function BookingDetailsModal({
                   <X className="hidden sm:block h-4 w-4" />
                 </Button>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-base sm:text-lg md:text-xl font-semibold font-['Space_Grotesk'] truncate text-[#1E3A8A]">
                       {booking.event_types?.title || "Meeting"}
                     </h2>
+                    <Badge className={cn("text-[10px]", getScopeBadge(scope))}>
+                      <ScopeIcon className="h-2.5 w-2.5 mr-1" />
+                      {scopeConfig.label}
+                    </Badge>
                     {isOneTimeEvent && (
                       <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[10px]">
                         <CalendarCheck2 className="h-2.5 w-2.5 mr-1" />
@@ -1017,7 +1070,33 @@ function BookingDetailsModal({
                 maxHeight: isMobile ? "calc(100dvh - 120px)" : "calc(90vh - 140px)"
               }}
             >
-              {/* Meeting Provider Info - New section */}
+              {/* Event Type Badges */}
+              <div className="flex flex-wrap gap-2">
+                <Badge className={cn("text-xs", getScopeBadge(scope))}>
+                  <ScopeIcon className="h-3 w-3 mr-1" />
+                  {scopeConfig.label}
+                </Badge>
+                {isTeamEvent && (
+                  <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                    <UsersRound className="h-3 w-3 mr-1" />
+                    Team Event
+                  </Badge>
+                )}
+                {isOneTimeEvent && (
+                  <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
+                    <CalendarCheck2 className="h-3 w-3 mr-1" />
+                    Fixed Date
+                  </Badge>
+                )}
+                {booking.event_types?.require_approval && (
+                  <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
+                    <Clock3 className="h-3 w-3 mr-1" />
+                    Pending Approval
+                  </Badge>
+                )}
+              </div>
+
+              {/* Meeting Provider Info */}
               {booking.event_types?.location_type === 'video' && (
                 <div className={cn("rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border", providerInfo.lightBg, providerInfo.borderColor)}>
                   <div className="flex items-center gap-2 sm:gap-3 mb-3">
@@ -1043,12 +1122,18 @@ function BookingDetailsModal({
                           Group Event
                         </Badge>
                       )}
+                      {isPermanentLink && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 justify-center">
+                          <Link2 className="h-3 w-3 mr-1" />
+                          Permanent Link
+                        </Badge>
+                      )}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Meeting Link Section - Enhanced with provider */}
+              {/* Meeting Link Section */}
               {booking.event_types?.location_type === 'video' && booking.meeting_link && (
                 <div className="bg-gradient-to-br from-[#1E3A8A]/5 to-[#C2410C]/5 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-[#1E3A8A]/20">
                   <div className="flex items-center gap-2 sm:gap-3 mb-3">
@@ -1061,9 +1146,9 @@ function BookingDetailsModal({
                     link={booking.meeting_link} 
                     provider={meetingProvider}
                     label="Meeting Link" 
+                    isPermanent={isPermanentLink}
                   />
                   
-                  {/* Quick join button */}
                   <Button
                     className="w-full mt-3 gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
                     size={isMobile ? "default" : "lg"}
@@ -1075,7 +1160,7 @@ function BookingDetailsModal({
                 </div>
               )}
 
-              {/* Date & Time Card - Enhanced with schedule type */}
+              {/* Date & Time Card */}
               <div className="bg-gradient-to-br from-[#1E3A8A]/5 via-[#1E3A8A]/5 to-transparent rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border">
                 <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                   <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-[#1E3A8A]/10 text-[#1E3A8A]">
@@ -1184,13 +1269,13 @@ function BookingDetailsModal({
                     {booking.event_types?.location_type !== 'video' && booking.event_types?.location_details && (
                       <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">{booking.event_types.location_details}</p>
                     )}
-                    {/* Show meeting link in location section as fallback */}
                     {booking.event_types?.location_type === 'video' && booking.meeting_link && (
                       <div className="mt-2">
                         <MeetingLinkDisplay 
                           link={booking.meeting_link} 
                           provider={meetingProvider}
                           label="Meeting Link" 
+                          isPermanent={isPermanentLink}
                         />
                       </div>
                     )}
@@ -1218,7 +1303,7 @@ function BookingDetailsModal({
                 </div>
               )}
 
-              {/* Conference Data (if available) */}
+              {/* Conference Data */}
               {booking.conference_data && (
                 <div className="rounded-xl sm:rounded-2xl border p-4 sm:p-5 md:p-6 bg-blue-50/50 dark:bg-blue-950/10">
                   <div className="flex items-center gap-2 sm:gap-3 mb-3">
@@ -1268,7 +1353,6 @@ function BookingDetailsModal({
                 </div>
               </div>
 
-              {/* Additional spacing at bottom */}
               <div className="h-2 sm:h-4" />
             </div>
 
@@ -1334,7 +1418,7 @@ function BookingDetailsModal({
 }
 
 // ============================================
-// BOOKINGS TABLE (DESKTOP) - Enhanced with meeting provider
+// BOOKINGS TABLE (DESKTOP)
 // ============================================
 
 function BookingsTable({ bookings, onCancel, onRowClick }: { 
@@ -1358,16 +1442,17 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
       <Table>
         <TableHeader className="bg-[#1E3A8A]/5">
           <TableRow>
-            <TableHead className="w-[120px] text-[#1E3A8A]">Date</TableHead>
-            <TableHead className="w-[80px] text-[#1E3A8A]">Time</TableHead>
+            <TableHead className="w-[100px] text-[#1E3A8A]">Date</TableHead>
+            <TableHead className="w-[70px] text-[#1E3A8A]">Time</TableHead>
             <TableHead className="w-[150px] text-[#1E3A8A]">Event</TableHead>
-            <TableHead className="w-[150px] text-[#1E3A8A]">Guest</TableHead>
-            <TableHead className="w-[80px] text-[#1E3A8A]">Duration</TableHead>
-            <TableHead className="w-[100px] text-[#1E3A8A]">Location</TableHead>
-            <TableHead className="w-[80px] text-[#1E3A8A]">Provider</TableHead>
-            <TableHead className="w-[200px] text-[#1E3A8A]">Meeting Link</TableHead>
-            <TableHead className="w-[80px] text-[#1E3A8A]">Status</TableHead>
-            <TableHead className="w-[80px] text-right text-[#1E3A8A]">Actions</TableHead>
+            <TableHead className="w-[70px] text-[#1E3A8A]">Scope</TableHead>
+            <TableHead className="w-[140px] text-[#1E3A8A]">Guest</TableHead>
+            <TableHead className="w-[60px] text-[#1E3A8A]">Dur.</TableHead>
+            <TableHead className="w-[80px] text-[#1E3A8A]">Location</TableHead>
+            <TableHead className="w-[70px] text-[#1E3A8A]">Provider</TableHead>
+            <TableHead className="w-[150px] text-[#1E3A8A]">Meeting Link</TableHead>
+            <TableHead className="w-[70px] text-[#1E3A8A]">Status</TableHead>
+            <TableHead className="w-[50px] text-right text-[#1E3A8A]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1377,7 +1462,11 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
             const meetingProvider = booking.meeting_provider || booking.event_types?.meeting_provider || 'google_meet';
             const providerInfo = getMeetingProviderInfo(meetingProvider);
             const ProviderIcon = providerInfo.icon;
+            const scope = booking.event_types?.scope || 'personal';
+            const scopeConfig = getScopeConfig(scope);
+            const ScopeIcon = scopeConfig.icon;
             const isOneTimeEvent = booking.event_types?.schedule_type === 'one_time';
+            const isPermanentLink = booking.event_types?.permanent_meeting_link === booking.meeting_link;
             
             return (
               <TableRow 
@@ -1385,49 +1474,58 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                 className="cursor-pointer hover:bg-[#1E3A8A]/5 transition-colors"
                 onClick={() => onRowClick(booking.id)}
               >
-                <TableCell className="font-medium text-sm">
+                <TableCell className="font-medium text-sm whitespace-nowrap">
                   {formatDate(booking.start_time)}
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="text-sm whitespace-nowrap">
                   {formatTime12(booking.start_time)}
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium font-['Space_Grotesk'] text-[#1E3A8A]">
+                      <span className="text-sm font-medium font-['Space_Grotesk'] text-[#1E3A8A] truncate max-w-[100px]">
                         {booking.event_types?.title || "Meeting"}
                       </span>
                       {isOneTimeEvent && (
-                        <CalendarCheck2 className="h-3 w-3 text-purple-600" />
+                        <CalendarCheck2 className="h-3 w-3 text-purple-600 shrink-0" />
                       )}
                     </div>
                     {booking.event_types?.color && (
                       <div className="flex items-center gap-1">
                         <div 
-                          className="h-2 w-2 rounded-full" 
+                          className="h-2 w-2 rounded-full shrink-0" 
                           style={{ backgroundColor: booking.event_types.color }}
                         />
-                        <span className="text-xs text-muted-foreground">Event</span>
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+                          {booking.event_types.title?.substring(0, 15)}...
+                        </span>
                       </div>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-[#1E3A8A]">{booking.guest_name}</div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[120px]">{booking.guest_email}</div>
+                  <Badge className={cn("text-[10px] px-1.5 py-0", getScopeBadge(scope))}>
+                    <ScopeIcon className="h-2.5 w-2.5 mr-1" />
+                    {scope === 'personal' ? 'Per' : scope === 'organization' ? 'Org' : 'Dept'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1 max-w-[120px]">
+                    <div className="text-sm font-medium text-[#1E3A8A] truncate">{booking.guest_name}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">{booking.guest_email}</div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="text-xs border-[#1E3A8A]/20">
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 border-[#1E3A8A]/20">
                     {booking.event_types?.duration || 30} min
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     {getLocationIcon(booking.event_types?.location_type || 'video')}
-                    <span className="text-xs capitalize text-[#1E3A8A]">
-                      {getLocationLabel(booking.event_types?.location_type || 'video')}
+                    <span className="text-[10px] capitalize text-[#1E3A8A]">
+                      {booking.event_types?.location_type === 'video' ? 'Video' : 
+                       booking.event_types?.location_type === 'phone' ? 'Phone' : 'In person'}
                     </span>
                   </div>
                 </TableCell>
@@ -1437,12 +1535,15 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="flex items-center gap-1">
-                            <ProviderIcon className={cn("h-4 w-4", providerInfo.color)} />
-                            <span className="text-xs">{providerInfo.label.split(' ')[0]}</span>
+                            <ProviderIcon className={cn("h-3 w-3", providerInfo.color)} />
+                            <span className="text-[10px]">{providerInfo.label.split(' ')[0]}</span>
+                            {isPermanentLink && (
+                              <span className="text-[8px] text-green-600 ml-0.5">●</span>
+                            )}
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{providerInfo.label}</p>
+                          <p>{providerInfo.label}{isPermanentLink ? ' (Permanent Link)' : ''}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -1450,10 +1551,10 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                 </TableCell>
                 <TableCell>
                   {booking.event_types?.location_type === 'video' && booking.meeting_link ? (
-                    <div className="flex items-center gap-1 max-w-[140px]">
+                    <div className="flex items-center gap-1 max-w-[130px]">
                       <div className="flex-1 truncate">
-                        <span className="text-xs text-muted-foreground truncate block">
-                          {booking.meeting_link.replace(/^https?:\/\//, '').substring(0, 20)}...
+                        <span className="text-[10px] text-muted-foreground truncate block">
+                          {booking.meeting_link.replace(/^https?:\/\//, '').substring(0, 15)}...
                         </span>
                       </div>
                       <TooltipProvider>
@@ -1462,13 +1563,13 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 shrink-0 hover:text-[#1E3A8A]"
+                              className="h-5 w-5 shrink-0 hover:text-[#1E3A8A]"
                               onClick={(e) => copyMeetingLink(e, booking.id, booking.meeting_link!)}
                             >
                               {copiedId === booking.id ? (
-                                <Check className="h-3 w-3 text-[#1E3A8A]" />
+                                <Check className="h-2.5 w-2.5 text-[#1E3A8A]" />
                               ) : (
-                                <Clipboard className="h-3 w-3" />
+                                <Clipboard className="h-2.5 w-2.5" />
                               )}
                             </Button>
                           </TooltipTrigger>
@@ -1483,13 +1584,13 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 shrink-0 hover:text-[#1E3A8A]"
+                              className="h-5 w-5 shrink-0 hover:text-[#1E3A8A]"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 window.open(booking.meeting_link!, '_blank');
                               }}
                             >
-                              <ExternalLink className="h-3 w-3" />
+                              <ExternalLink className="h-2.5 w-2.5" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -1499,14 +1600,14 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                       </TooltipProvider>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-[10px] text-muted-foreground">—</span>
                   )}
                 </TableCell>
                 <TableCell>
                   <Badge 
-                    variant={booking.status === 'confirmed' ? 'default' : 'destructive'}
+                    variant={booking.status === 'confirmed' ? 'outline' : 'destructive'}
                     className={cn(
-                      "text-xs",
+                      "text-[10px] px-1.5 py-0",
                       booking.status === 'confirmed' && "bg-green-500/10 text-green-600 border-green-500/20"
                     )}
                   >
@@ -1515,17 +1616,26 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
                 </TableCell>
                 <TableCell className="text-right">
                   {isUpcoming && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCancel(booking);
-                      }}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancel(booking);
+                            }}
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Cancel booking</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                 </TableCell>
               </TableRow>
@@ -1538,7 +1648,7 @@ function BookingsTable({ bookings, onCancel, onRowClick }: {
 }
 
 // ============================================
-// BOOKING CARD FOR MOBILE VIEW - Enhanced with meeting provider
+// BOOKING CARD FOR MOBILE VIEW
 // ============================================
 
 function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCancel: (b: Booking) => void; onClick: () => void }) {
@@ -1550,7 +1660,11 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
   const meetingProvider = booking.meeting_provider || event?.meeting_provider || 'google_meet';
   const providerInfo = getMeetingProviderInfo(meetingProvider);
   const ProviderIcon = providerInfo.icon;
+  const scope = event?.scope || 'personal';
+  const scopeConfig = getScopeConfig(scope);
+  const ScopeIcon = scopeConfig.icon;
   const isOneTimeEvent = event?.schedule_type === 'one_time';
+  const isPermanentLink = event?.permanent_meeting_link === booking.meeting_link;
 
   const copyMeetingLink = (e: React.MouseEvent, link: string) => {
     e.stopPropagation();
@@ -1572,7 +1686,7 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
         <div className="h-1" style={{ backgroundColor: event?.color || "#1E3A8A" }} />
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <Badge 
                 variant={booking.status === 'confirmed' ? 'outline' : 'destructive'}
                 className={cn(
@@ -1582,14 +1696,18 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
               >
                 {booking.status}
               </Badge>
+              <Badge className={cn("text-[8px] px-1.5 py-0", getScopeBadge(scope))}>
+                <ScopeIcon className="h-2 w-2 mr-0.5" />
+                {scope === 'personal' ? 'Personal' : scope === 'organization' ? 'Org' : 'Dept'}
+              </Badge>
               {isOneTimeEvent && (
-                <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[8px] px-1.5">
-                  <CalendarCheck2 className="h-2.5 w-2.5 mr-0.5" />
+                <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[8px] px-1.5 py-0">
+                  <CalendarCheck2 className="h-2 w-2 mr-0.5" />
                   Fixed
                 </Badge>
               )}
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
               {formatDate(booking.start_time)}
             </span>
           </div>
@@ -1603,14 +1721,14 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
               <Clock className="h-3 w-3 shrink-0 text-[#1E3A8A]" />
               <span>{formatTime12(booking.start_time)}</span>
               {event?.duration && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 border-[#1E3A8A]/20">
+                <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#1E3A8A]/20">
                   {event.duration}min
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <User className="h-3 w-3 shrink-0 text-[#1E3A8A]" />
-              <span className="truncate text-[#1E3A8A]">{booking.guest_name}</span>
+              <span className="truncate text-[#1E3A8A] max-w-[150px]">{booking.guest_name}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {getLocationIcon(event?.location_type || 'video')}
@@ -1621,15 +1739,18 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
             </div>
           </div>
 
-          {/* Meeting Link Preview (if video call) */}
+          {/* Meeting Link Preview */}
           {event?.location_type === 'video' && booking.meeting_link && (
             <div className={cn("mt-2 mb-3 p-2 rounded-lg border", providerInfo.lightBg, providerInfo.borderColor)}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1 min-w-0 flex-1">
                   <ProviderIcon className={cn("h-3 w-3", providerInfo.color)} />
-                  <span className={cn("text-xs font-medium truncate", providerInfo.color)}>
+                  <span className={cn("text-[10px] font-medium truncate", providerInfo.color)}>
                     {providerInfo.label}
                   </span>
+                  {isPermanentLink && (
+                    <span className="text-[8px] text-green-600">●</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <TooltipProvider>
@@ -1704,12 +1825,13 @@ function BookingCard({ booking, onCancel, onClick }: { booking: Booking; onCance
 
 export default function Bookings() {
   const { bookingId } = useParams();
+  const { user } = useAuth();
   const [tab, setTab] = useState<"upcoming" | "past" | "cancelled">("upcoming");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const { data: bookings, isLoading, refetch } = useBookings(tab, search);
+  const { data: bookings, isLoading, refetch, error } = useBookings(tab, search);
   const cancelMutation = useCancelBooking();
   const { toast } = useToast();
   const [cancelDialog, setCancelDialog] = useState<Booking | null>(null);
@@ -1774,6 +1896,11 @@ export default function Bookings() {
     
     const popularTime = getPopularTimeSlot(bookings || []);
     
+    // Count by scope
+    const personalEvents = bookings?.filter(b => b.event_types?.scope === 'personal').length || 0;
+    const organizationEvents = bookings?.filter(b => b.event_types?.scope === 'organization').length || 0;
+    const departmentEvents = bookings?.filter(b => b.event_types?.scope === 'department').length || 0;
+    
     // Count by meeting provider
     const providerCounts: Record<string, number> = {};
     bookings?.forEach(b => {
@@ -1797,6 +1924,9 @@ export default function Bookings() {
       nextBookingTime: nextBooking ? formatTime12(nextBooking.start_time) : '',
       popularTime,
       conversionRate: Math.round((past.length / (bookings?.length || 1)) * 100) || 0,
+      personalEvents,
+      organizationEvents,
+      departmentEvents,
       oneTimeEvents,
       providerCounts
     };
@@ -1810,20 +1940,6 @@ export default function Bookings() {
         title: "✅ Booking cancelled", 
         description: "The booking has been successfully cancelled."
       });
-
-      sendBookingEmail("cancellation", {
-        id: cancelDialog.id,
-        guest_name: cancelDialog.guest_name,
-        guest_email: cancelDialog.guest_email,
-        host_name: "",
-        event_title: cancelDialog.event_types?.title || "Meeting",
-        start_time: cancelDialog.start_time,
-        end_time: cancelDialog.end_time,
-        duration: cancelDialog.event_types?.duration || 30,
-        location_type: cancelDialog.event_types?.location_type || "video",
-        guest_timezone: cancelDialog.guest_timezone,
-      });
-
       setCancelDialog(null);
       refetch();
     } catch (err: any) {
@@ -1842,6 +1958,24 @@ export default function Bookings() {
     setSelectedBookingId(null);
     window.history.pushState({}, '', '/dashboard/bookings');
   };
+
+  if (error) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <Card className="max-w-md w-full border-destructive">
+          <CardContent className="py-8 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Failed to load bookings</h3>
+            <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
+            <Button onClick={() => refetch()} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -1872,7 +2006,7 @@ export default function Bookings() {
         </div>
       </motion.div>
 
-      {/* Dashboard-style Stats Cards - Enhanced with new stats */}
+      {/* Dashboard-style Stats Cards */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatsCard
           title="Total Bookings"
@@ -1909,7 +2043,7 @@ export default function Bookings() {
         />
       </motion.div>
 
-      {/* Quick Stats Row - Enhanced */}
+      {/* Quick Stats Row */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card className="bg-gradient-to-br from-slate-50 to-white border-0 shadow-sm">
           <CardContent className="p-3 sm:p-4">
@@ -1961,6 +2095,58 @@ export default function Bookings() {
                 <p className="text-sm sm:text-base font-semibold">{stats.oneTimeEvents}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Event Type Breakdown */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card className="bg-gradient-to-br from-blue-50 to-white border-0 shadow-sm">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-blue-100 p-1.5">
+                <User className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Personal Events</p>
+                <p className="text-lg font-semibold text-blue-600">{stats.personalEvents}</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              {stats.total > 0 ? Math.round((stats.personalEvents / stats.total) * 100) : 0}%
+            </Badge>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-green-50 to-white border-0 shadow-sm">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-green-100 p-1.5">
+                <Users className="h-4 w-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Organization Events</p>
+                <p className="text-lg font-semibold text-green-600">{stats.organizationEvents}</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              {stats.total > 0 ? Math.round((stats.organizationEvents / stats.total) * 100) : 0}%
+            </Badge>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-50 to-white border-0 shadow-sm">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-purple-100 p-1.5">
+                <Building2 className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Department Events</p>
+                <p className="text-lg font-semibold text-purple-600">{stats.departmentEvents}</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              {stats.total > 0 ? Math.round((stats.departmentEvents / stats.total) * 100) : 0}%
+            </Badge>
           </CardContent>
         </Card>
       </motion.div>

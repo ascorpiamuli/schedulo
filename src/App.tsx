@@ -18,17 +18,18 @@ import { Loader2 } from "lucide-react";
 import Teams from "./pages/Teams";
 import TeamManagement from "./pages/Teams";
 import Settings from "./pages/Settings";
-import OrganizationSettings from "./pages/OrganizationSettings"; // NEW: Org-level settings
-import Departments from "./pages/Departments"; // NEW: Department management
-import TeamAnalytics from "./pages/TeamAnalytics"; // NEW: Team performance analytics
-import TeamBookings from "./pages/TeamBookings"; // NEW: Team-wide bookings view
-import TeamAvailability from "./pages/TeamAvailability"; // NEW: Team availability overview
-import TeamEvents from "./pages/TeamEvents"; // NEW: Team event types
-import Invitations from "./pages/Invitations"; // NEW: Manage team invitations
-import Billing from "./pages/Billing"; // NEW: Organization billing
-import Usage from "./pages/Usage"; // NEW: Team usage analytics
-import Integrations from "./pages/Integrations"; // NEW: Team integrations
-import Security from "./pages/Security"; // NEW: Team security settings
+import OrganizationSettings from "./pages/OrganizationSettings";
+import Departments from "./pages/Departments";
+import TeamAnalytics from "./pages/TeamAnalytics";
+import TeamBookings from "./pages/TeamBookings";
+import TeamAvailability from "./pages/TeamAvailability";
+import TeamEvents from "./pages/TeamEvents";
+import Invitations from "./pages/Invitations";
+import Billing from "./pages/Billing";
+import Usage from "./pages/Usage";
+import Integrations from "./pages/Integrations";
+import Security from "./pages/Security";
+import AcceptInvite from "./pages/AcceptInvite"; // Import the accept invite page
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,6 +116,9 @@ const App = () => {
               {/* Public booking pages - accessible to everyone (no auth check) */}
               <Route path="/:username" element={<BookingPage />} />
               <Route path="/:username/:eventSlug" element={<BookingPage />} />
+              
+              {/* Accept Invite Route - Public, no auth required but handles auth state */}
+              <Route path="/accept-invite/:token" element={<AcceptInvite />} />
               
               {/* ============================================
                   DASHBOARD ROUTES - Protected, require authentication
