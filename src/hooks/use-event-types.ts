@@ -204,18 +204,24 @@ async function fetchUsersForTeamMembers(teamMembers: any[]): Promise<any[]> {
 // MAIN HOOKS
 // ============================================
 
+// hooks/use-event-types.ts - Update the useEventTypes function
+
+// hooks/use-event-types.ts - Fix the query
+
 export function useEventTypes(scope?: EventScope, departmentId?: string) {
   const { user } = useAuth();
   const { data: organization } = useOrganization();
+  const { data: currentTeamMember } = useCurrentTeamMember();
   
   return useQuery({
-    queryKey: ["event_types", scope, departmentId, organization?.id, user?.id],
+    queryKey: ["event_types", scope, departmentId, organization?.id, user?.id, currentTeamMember?.department],
     queryFn: async () => {
       console.log("🔍 [useEventTypes] Starting fetch with params:", { 
         scope, 
         departmentId, 
         userId: user?.id,
-        orgId: organization?.id 
+        orgId: organization?.id,
+        userDepartment: currentTeamMember?.department
       });
       
       if (!user) {
@@ -254,43 +260,61 @@ export function useEventTypes(scope?: EventScope, departmentId?: string) {
           .eq('scope', 'personal');
       } 
       else if (scope === 'organization' && organization) {
-        const { data: members } = await supabase
-          .from('team_members')
-          .select('user_id')
-          .eq('organization_id', organization.id);
-        
-        if (members && members.length > 0) {
-          const userIds = members.map(m => m.user_id).filter(Boolean);
-          query = query
-            .or(`user_id.in.(${userIds.join(',')}),organization_id.eq.${organization.id}`)
-            .eq('scope', 'organization');
-        } else {
-          query = query
-            .eq('organization_id', organization.id)
-            .eq('scope', 'organization');
-        }
+        // Organization events - accessible to all team members
+        query = query
+          .eq('organization_id', organization.id)
+          .eq('scope', 'organization');
       } 
       else if (scope === 'department' && departmentId) {
+        // Specific department events
         query = query
           .eq('department_id', departmentId)
           .eq('scope', 'department');
       } 
       else {
-        // No filter - show accessible events
+        // No filter - show ALL events the user has access to:
+        // 1. Personal events (created by user)
+        // 2. Organization events (if user is in an organization)
+        // 3. Department events (if user is in a department)
+        
         if (organization) {
-          const { data: members } = await supabase
-            .from('team_members')
-            .select('user_id')
-            .eq('organization_id', organization.id);
-          
-          if (members && members.length > 0) {
-            const userIds = members.map(m => m.user_id).filter(Boolean);
-            query = query
-              .or(`user_id.eq.${user.id},and(scope.eq.organization,organization_id.eq.${organization.id})`);
+          // User is in an organization
+          if (currentTeamMember?.department) {
+            // First, get the department IDs for the user's department name
+            const { data: departments } = await supabase
+              .from('departments')
+              .select('id')
+              .eq('organization_id', organization.id)
+              .eq('name', currentTeamMember.department);
+
+            const departmentIds = departments?.map(d => d.id) || [];
+            
+            if (departmentIds.length > 0) {
+              // User is in a department - show personal + organization + their department events
+              query = query
+                .or(
+                  `and(user_id.eq.${user.id},scope.eq.personal),` +
+                  `and(scope.eq.organization,organization_id.eq.${organization.id}),` +
+                  `and(scope.eq.department,department_id.in.(${departmentIds.join(',')}))`
+                );
+            } else {
+              // Department name found but no matching IDs (shouldn't happen)
+              query = query
+                .or(
+                  `and(user_id.eq.${user.id},scope.eq.personal),` +
+                  `and(scope.eq.organization,organization_id.eq.${organization.id})`
+                );
+            }
           } else {
-            query = query.eq('user_id', user.id);
+            // User in organization but no department - show personal + organization events only
+            query = query
+              .or(
+                `and(user_id.eq.${user.id},scope.eq.personal),` +
+                `and(scope.eq.organization,organization_id.eq.${organization.id})`
+              );
           }
         } else {
+          // No organization - only personal events
           query = query.eq('user_id', user.id);
         }
       }
@@ -354,7 +378,6 @@ export function useEventTypes(scope?: EventScope, departmentId?: string) {
     staleTime: 1000 * 60 * 5,
   });
 }
-
 export function usePersonalEvents() {
   return useEventTypes('personal');
 }
@@ -442,7 +465,32 @@ export function useEventTypeBySlug(userId: string | undefined, slug: string | un
     retry: false,
   });
 }
+// hooks/use-team-management.ts (add this hook)
 
+export const useCurrentTeamMember = () => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['currentTeamMember', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching current team member:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!user,
+  });
+};
 export function useEventType(id: string | undefined) {
   const { user } = useAuth();
   

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
 
 // ============================================
 // TYPES (matching your exact database schema)
@@ -123,35 +124,57 @@ export interface AvailableMember {
 /**
  * Hook to fetch all departments with member counts and manager info
  */
-export const useDepartments = () => {
+export const useDepartments = (options?: { enabled?: boolean }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [isLoadingOrg, setIsLoadingOrg] = useState(true);
 
-  return useQuery({
-    queryKey: ['departments'],
-    queryFn: async () => {
-      if (!user) throw new Error('Not authenticated');
-
-      // First get the user's organization
-      const { data: teamMember, error: teamError } = await supabase
-        .from('team_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (teamError || !teamMember) {
-        toast({
-          title: 'Error',
-          description: 'Could not find your organization',
-          variant: 'destructive',
-        });
-        throw teamError;
+  // First, get the user's organization from team_members
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      if (!user?.id) {
+        setIsLoadingOrg(false);
+        return;
       }
 
-      // Call the database function
+      try {
+        const { data, error } = await supabase
+          .from('team_members')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('❌ useDepartments - Error fetching organization:', error);
+          setOrganizationId(null);
+        } else if (data) {
+          setOrganizationId(data.organization_id);
+        } else {
+          console.log('ℹ️ useDepartments - No team member found for user:', user.id);
+          setOrganizationId(null);
+        }
+      } catch (err) {
+        console.error('❌ useDepartments - Unexpected error:', err);
+        setOrganizationId(null);
+      } finally {
+        setIsLoadingOrg(false);
+      }
+    };
+
+    fetchOrganization();
+  }, [user?.id]);
+
+  return useQuery({
+    queryKey: ['departments', organizationId],
+    queryFn: async () => {
+      if (!organizationId) {
+        return []; // Return empty array if no organization
+      }
+
       const { data, error } = await supabase
         .rpc('get_departments_with_stats', {
-          p_organization_id: teamMember.organization_id
+          p_organization_id: organizationId
         });
 
       if (error) {
@@ -160,15 +183,14 @@ export const useDepartments = () => {
           description: 'Failed to fetch departments',
           variant: 'destructive',
         });
-        throw error;
+        return []; // Return empty array instead of throwing
       }
 
       return data as DepartmentWithStats[];
     },
-    enabled: !!user,
+    enabled: (options?.enabled ?? true) && !isLoadingOrg && !!user && !!organizationId,
   });
 };
-
 /**
  * Hook to fetch single department with members and manager
  */
@@ -204,61 +226,70 @@ export const useDepartmentDetails = (departmentId: string | null) => {
 /**
  * Hook to fetch department analytics
  */
-export const useDepartmentAnalytics = () => {
+export const useDepartmentAnalytics = (options?: { enabled?: boolean }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [isLoadingOrg, setIsLoadingOrg] = useState(true);
 
-  return useQuery({
-    queryKey: ['department-analytics'],
-    queryFn: async () => {
-      console.log('🔍 useDepartmentAnalytics - Starting fetch for user:', user?.id);
-      
-      if (!user) {
-        console.error('❌ useDepartmentAnalytics - No user authenticated');
-        throw new Error('Not authenticated');
+  // First, get the user's organization from team_members
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      if (!user?.id) {
+        setIsLoadingOrg(false);
+        return;
       }
 
       try {
-        // Step 1: Get team member info
-        console.log('📊 useDepartmentAnalytics - Fetching team member for user:', user.id);
-        const { data: teamMember, error: teamError } = await supabase
+        console.log('🔍 useDepartmentAnalytics - Fetching organization for user:', user.id);
+        
+        const { data, error } = await supabase
           .from('team_members')
           .select('organization_id')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to avoid 406 error
 
-        if (teamError) {
-          console.error('❌ useDepartmentAnalytics - Team member error:', {
-            error: teamError,
-            message: teamError.message,
-            details: teamError.details,
-            hint: teamError.hint,
-            code: teamError.code
-          });
+        if (error) {
+          console.error('❌ useDepartmentAnalytics - Error fetching organization:', error);
+          setOrganizationId(null);
+        } else if (data) {
+          console.log('✅ useDepartmentAnalytics - Organization found:', data.organization_id);
+          setOrganizationId(data.organization_id);
+        } else {
+          // No team member found - this is expected for new users
+          console.log('ℹ️ useDepartmentAnalytics - No team member found for user:', user.id);
+          setOrganizationId(null);
         }
+      } catch (err) {
+        console.error('❌ useDepartmentAnalytics - Unexpected error:', err);
+        setOrganizationId(null);
+      } finally {
+        setIsLoadingOrg(false);
+      }
+    };
 
-        if (!teamMember) {
-          console.warn('⚠️ useDepartmentAnalytics - No team member found for user:', user.id);
-          toast({
-            title: 'Error',
-            description: 'Could not find your organization',
-            variant: 'destructive',
-          });
-          throw new Error('No team member found');
-        }
+    fetchOrganization();
+  }, [user?.id]);
 
-        console.log('✅ useDepartmentAnalytics - Team member found:', {
-          organization_id: teamMember.organization_id,
-          user_id: user.id
-        });
+  // Only fetch department analytics if we have an organizationId and the hook is enabled
+  return useQuery({
+    queryKey: ['department-analytics', organizationId],
+    queryFn: async () => {
+      console.log('🔍 useDepartmentAnalytics - Starting fetch for organization:', organizationId);
+      
+      if (!organizationId) {
+        console.log('ℹ️ useDepartmentAnalytics - No organization ID, returning empty array');
+        return [];
+      }
 
-        // Step 2: Call the RPC function
-        console.log('📊 useDepartmentAnalytics - Calling get_department_analytics RPC with org_id:', teamMember.organization_id);
+      try {
+        // Call the RPC function
+        console.log('📊 useDepartmentAnalytics - Calling get_department_analytics RPC with org_id:', organizationId);
         const startTime = performance.now();
         
         const { data, error } = await supabase
           .rpc('get_department_analytics', {
-            p_organization_id: teamMember.organization_id
+            p_organization_id: organizationId
           });
 
         const endTime = performance.now();
@@ -278,14 +309,15 @@ export const useDepartmentAnalytics = () => {
             description: 'Failed to fetch department analytics',
             variant: 'destructive',
           });
-          throw error;
+          
+          // Return empty array instead of throwing
+          return [];
         }
 
-        // Step 3: Log raw data from database
+        // Log raw data from database
         console.log('📦 useDepartmentAnalytics - Raw data from database:', {
           hasData: !!data,
           dataLength: data?.length || 0,
-          rawData: data ? JSON.parse(JSON.stringify(data)) : null // Deep copy to avoid reference issues
         });
 
         if (!data || data.length === 0) {
@@ -293,34 +325,7 @@ export const useDepartmentAnalytics = () => {
           return [];
         }
 
-        // Step 4: Log each raw record before transformation
-        data.forEach((stat: any, index: number) => {
-          console.log(`📊 useDepartmentAnalytics - Raw record ${index + 1}:`, {
-            department_id: stat.department_id,
-            department_name: stat.department_name,
-            department_color: stat.department_color,
-            total_members: stat.total_members,
-            active_members: stat.active_members,
-            total_events: stat.total_events,
-            team_events: stat.team_events,
-            personal_events: stat.personal_events,
-            total_bookings: stat.total_bookings,
-            team_bookings: stat.team_bookings,
-            personal_bookings: stat.personal_bookings,
-            completion_rate: stat.completion_rate,
-            // Show types to debug any string/number issues
-            types: {
-              total_members: typeof stat.total_members,
-              active_members: typeof stat.active_members,
-              total_events: typeof stat.total_events,
-              team_events: typeof stat.team_events,
-              personal_events: typeof stat.personal_events,
-              completion_rate: typeof stat.completion_rate
-            }
-          });
-        });
-
-        // Step 5: Transform the data
+        // Transform the data
         console.log('🔄 useDepartmentAnalytics - Transforming data...');
         const transformedData = (data || []).map((stat: any, index: number) => {
           const transformed = {
@@ -346,17 +351,9 @@ export const useDepartmentAnalytics = () => {
           return transformed;
         });
 
-        // Step 6: Log summary of transformed data
         console.log('📊 useDepartmentAnalytics - Transformation complete:', {
           originalCount: data?.length || 0,
           transformedCount: transformedData.length,
-          departments: transformedData.map(d => ({
-            name: d.department_name,
-            members: d.total_members,
-            team_events: d.team_events,
-            personal_events: d.personal_events,
-            completion_rate: d.completion_rate
-          }))
         });
 
         return transformedData as DepartmentAnalytics[];
@@ -374,10 +371,11 @@ export const useDepartmentAnalytics = () => {
           variant: 'destructive',
         });
         
-        throw error;
+        // Return empty array instead of throwing
+        return [];
       }
     },
-    enabled: !!user,
+    enabled: (options?.enabled ?? true) && !isLoadingOrg && !!user && !!organizationId,
     retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

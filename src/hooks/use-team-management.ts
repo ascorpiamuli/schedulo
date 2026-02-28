@@ -622,88 +622,99 @@ export const useCancelInvite = () => {
     }
   });
 };
+// hooks/use-team-management.ts
 
-// In your hooks file - useAcceptInvite hook
-export const useAcceptInvite = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  return useMutation({
-    mutationFn: async (token: string) => {
-      const { data, error } = await supabase.functions.invoke('accept-team-invite', {
-        body: { token }
-      });
-
-      if (error) {
-        console.error('Error accepting invite:', error);
-        throw new Error(error.message || 'Failed to accept invitation');
+export const useValidateInvite = (token: string | null, userInfo?: { user_id: string; user_email: string } | null) => {
+  return useQuery({
+    queryKey: ['validateInvite', token, userInfo?.user_id],
+    queryFn: async () => {
+      if (!token) throw new Error('No token provided');
+      
+      console.log('🔍 Validating invite token:', token, userInfo ? 'with user info' : 'without user info');
+      
+      const body: any = { token };
+      if (userInfo) {
+        body.user_id = userInfo.user_id;
+        body.user_email = userInfo.user_email;
       }
-
+      
+      const { data, error } = await supabase.functions.invoke('validate-team-invite', {
+        body
+      });
+      
+      if (error) {
+        console.error('❌ Validate error:', error);
+        let errorMessage = 'Failed to validate invitation';
+        try {
+          const parsed = JSON.parse(error.message);
+          errorMessage = parsed.error || error.message;
+        } catch {
+          errorMessage = error.message;
+        }
+        throw new Error(errorMessage);
+      }
+      
       if (data?.error) {
         throw new Error(data.error);
       }
+      
+      console.log('✅ Validate success:', data);
+      return data;
+    },
+    enabled: !!token,
+    retry: false,
+    staleTime: 0,
+  });
+};
 
+export const useAcceptInvite = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ token, user_id, user_email }: { token: string; user_id: string; user_email: string }) => {
+      console.log('🔍 Accepting invite:', { token, user_id, user_email });
+      
+      const { data, error } = await supabase.functions.invoke('accept-team-invite', {
+        body: { token, user_id, user_email }
+      });
+      
+      if (error) {
+        console.error('❌ Accept error:', error);
+        let errorMessage = 'Failed to accept invitation';
+        try {
+          const parsed = JSON.parse(error.message);
+          errorMessage = parsed.error || error.message;
+        } catch {
+          errorMessage = error.message;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+      
+      console.log('✅ Accept success:', data);
       return data;
     },
     onSuccess: (data) => {
-      if (data?.requires_signup) {
-        // Redirect to signup page with email pre-filled
-        navigate(`/signup?email=${encodeURIComponent(data.email)}&invite_token=${data.invite_token}`);
-        toast({
-          title: 'Almost there!',
-          description: 'Please create an account to join the team.',
-        });
-      } else {
-        // Successfully joined
-        queryClient.invalidateQueries({ queryKey: ['team-members'] });
-        queryClient.invalidateQueries({ queryKey: ['team-invites'] });
-        queryClient.invalidateQueries({ queryKey: ['organization'] });
-        
-        toast({
-          title: 'Welcome to the team! 🎉',
-          description: data.message || 'You have successfully joined the team',
-        });
-        
-        // Redirect to dashboard
-        navigate('/dashboard');
-      }
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      queryClient.invalidateQueries({ queryKey: ['teamInvites'] });
+      
+      toast({
+        title: 'Success! 🎉',
+        description: data.message || 'You have successfully joined the team',
+      });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error('❌ Accept mutation error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to accept invitation',
         variant: 'destructive',
       });
-    }
-  });
-};
-
-// Validate invite hook
-export const useValidateInvite = (token: string | null) => {
-  return useQuery({
-    queryKey: ['validate-invite', token],
-    queryFn: async () => {
-      if (!token) throw new Error('No token provided');
-
-      const { data, error } = await supabase.functions.invoke('accept-team-invite', {
-        body: { token }
-      });
-
-      if (error) {
-        console.error('Error validating invite:', error);
-        throw new Error('Invalid or expired invitation');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      return data;
     },
-    enabled: !!token,
-    retry: false,
-    staleTime: 0
   });
 };
 // Update team member
