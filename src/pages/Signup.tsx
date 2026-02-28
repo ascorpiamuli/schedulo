@@ -529,7 +529,7 @@ export default function Signup() {
           <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-8">
             A product of{" "}
             <a 
-              href="https://sbpgroup.com" 
+              href="https://pasbestventures.com" 
               target="_blank" 
               rel="noopener noreferrer"
               className="hover:text-[#C2410C] transition-colors font-medium"

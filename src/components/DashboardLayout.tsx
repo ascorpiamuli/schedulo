@@ -23,6 +23,59 @@ import {
   Clock3,
   CalendarCheck,
   X,
+  Building2,
+  BarChart3,
+  Mail,
+  Link2,
+  Shield,
+  TrendingUp,
+  UserPlus,
+  CalendarRange,
+  Home,
+  CheckSquare,
+  Briefcase,
+  PieChart,
+  Award,
+  Zap,
+  BookOpen,
+  MessageSquare,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  AtSign,
+  AlertCircle,
+  Globe,
+  Wallet,
+  Receipt,
+  Download,
+  Upload,
+  RefreshCw,
+  FileText,
+  Headphones,
+  Gift,
+  Sparkles,
+  Rocket,
+  Target,
+  Flag,
+  Compass,
+  Map,
+  Layers,
+  Grid,
+  List,
+  Filter,
+  SortAsc,
+  SortDesc,
+  Star,
+  Heart,
+  ThumbsUp,
+  Info,
+  Copy,
+  Share2,
+  ExternalLink,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -33,15 +86,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useOrganization, useCurrentUserPermissions } from "@/hooks/use-team-management";
 
 // Types for notifications
 interface Notification {
   id: string;
-  type: 'booking_confirmed' | 'payment_received' | 'reminder' | 'team_invite' | 'system';
+  type: 'booking_confirmed' | 'payment_received' | 'reminder' | 'team_invite' | 'system' | 'mention' | 'comment' | 'alert';
   title: string;
   message: string;
   read: boolean;
@@ -49,26 +109,62 @@ interface Notification {
   data?: any;
 }
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Event Types", href: "/dashboard/events", icon: CalendarDays },
-  { label: "Availability", href: "/dashboard/availability", icon: Clock },
-  { label: "Bookings", href: "/dashboard/bookings", icon: Calendar },
-  { label: "Team", href: "/dashboard/team", icon: Users },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+// Organized navigation structure with sections
+const navigation = [
+  {
+    title: "MAIN",
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Events", href: "/dashboard/events", icon: CalendarDays },
+      { name: "Availability", href: "/dashboard/availability", icon: Clock },
+      { name: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
+    ]
+  },
+  {
+    title: "TEAM",
+    items: [
+      { name: "Team Overview", href: "/dashboard/team", icon: Users },
+      { name: "Members", href: "/dashboard/team/members", icon: UserPlus },
+      { name: "Departments", href: "/dashboard/team/departments", icon: Building2 },
+      { name: "Team Calendar", href: "/dashboard/team/calendar", icon: CalendarRange },
+      { name: "Analytics", href: "/dashboard/team/analytics", icon: BarChart3 },
+    ]
+  },
+  {
+    title: "ORGANIZATION",
+    items: [
+      { name: "Settings", href: "/dashboard/organization", icon: Settings },
+      { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
+      { name: "Integrations", href: "/dashboard/integrations", icon: Link2 },
+      { name: "Security", href: "/dashboard/security", icon: Shield },
+    ]
+  },
+  {
+    title: "SUPPORT",
+    items: [
+      { name: "Help Center", href: "/help", icon: HelpCircle },
+      { name: "Documentation", href: "/docs", icon: BookOpen },
+    ]
+  }
 ];
 
 // Notification icons mapping
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case 'booking_confirmed':
-      return <CalendarCheck className="h-4 w-4 text-[#1E3A8A]" />;
+      return <CalendarCheck className="h-4 w-4 text-blue-600" />;
     case 'payment_received':
-      return <CreditCard className="h-4 w-4 text-[#C2410C]" />;
+      return <CreditCard className="h-4 w-4 text-green-600" />;
     case 'reminder':
-      return <Clock3 className="h-4 w-4 text-[#1E3A8A]" />;
+      return <Clock3 className="h-4 w-4 text-orange-600" />;
     case 'team_invite':
-      return <Users className="h-4 w-4 text-[#C2410C]" />;
+      return <UserPlus className="h-4 w-4 text-purple-600" />;
+    case 'mention':
+      return <AtSign className="h-4 w-4 text-indigo-600" />;
+    case 'comment':
+      return <MessageSquare className="h-4 w-4 text-teal-600" />;
+    case 'alert':
+      return <AlertCircle className="h-4 w-4 text-red-600" />;
     default:
       return <Bell className="h-4 w-4 text-gray-500" />;
   }
@@ -101,6 +197,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["MAIN", "TEAM", "ORGANIZATION"]);
+  
+  // Get organization and permissions
+  const { data: organization } = useOrganization();
+  const { data: permissions } = useCurrentUserPermissions();
   
   // Notification state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -112,6 +213,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const fetchNotifications = async () => {
     if (!user) return;
     
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -126,6 +228,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       setUnreadCount(data?.filter(n => !n.read).length || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -183,21 +287,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     // Handle navigation based on notification type
     switch (notification.type) {
       case 'booking_confirmed':
-        // Navigate to booking details
         if (notification.data?.bookingId) {
           window.location.href = `/dashboard/bookings/${notification.data.bookingId}`;
         }
         break;
       case 'payment_received':
-        // Navigate to payments
-        window.location.href = '/dashboard/payments';
+        window.location.href = '/dashboard/billing';
         break;
       case 'team_invite':
-        // Navigate to team
-        window.location.href = '/dashboard/team';
+        window.location.href = '/dashboard/team/members';
         break;
       default:
-        // Do nothing
         break;
     }
     
@@ -230,13 +330,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   };
 
+  // Toggle section expansion
+  const toggleSection = (sectionTitle: string) => {
+    setExpandedSections(prev =>
+      prev.includes(sectionTitle)
+        ? prev.filter(s => s !== sectionTitle)
+        : [...prev, sectionTitle]
+    );
+  };
+
   // Set up real-time subscription for notifications
   useEffect(() => {
     if (!user) return;
 
     fetchNotifications();
 
-    // Subscribe to new notifications
     const subscription = supabase
       .channel('notifications')
       .on(
@@ -252,7 +360,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show toast for new notification
           toast.info(newNotification.title, {
             description: newNotification.message,
             duration: 5000,
@@ -267,119 +374,133 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user]);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar - fixed height, no scroll */}
+      {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 lg:static lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Logo - fixed at top */}
-        <div className="flex h-16 items-center px-6 border-b border-sidebar-border shrink-0">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="relative flex items-center justify-center">
-              <div className="bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] p-1.5 rounded-lg shadow-lg">
-                <Calendar className="h-5 w-5 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 h-2 w-2 bg-[#C2410C] rounded-full animate-ping" />
-              <div className="absolute -top-1 -right-1 h-2 w-2 bg-[#C2410C] rounded-full" />
+        {/* Logo */}
+        <div className="flex h-16 items-center px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-blue-600 to-orange-600 p-1.5 rounded-lg">
+              <Calendar className="h-5 w-5 text-white" />
             </div>
-
-            <span className="font-['Space_Grotesk'] font-bold text-base md:text-lg tracking-tight">
-              <span className="text-white">SBP</span>
-              <span className="text-[#C2410C]">Meet</span>
+            <span className="font-bold text-lg">
+              <span className="text-blue-600">SBP</span>
+              <span className="text-orange-600">Meet</span>
             </span>
           </Link>
         </div>
 
-        {/* Nav - scrollable if needed, but usually fits */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1 min-h-0">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3">
+          {navigation.map((section) => (
+            <div key={section.title} className="mb-4">
+              <div className="px-3 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {section.title}
+              </div>
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive = location.pathname === item.href;
 
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                <span className="truncate">{item.label}</span>
-                {isActive && (
-                  <div className="ml-auto h-2 w-2 rounded-full bg-[#C2410C] animate-pulse" />
-                )}
-              </Link>
-            );
-          })}
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}
+                    >
+                      <item.icon className={cn(
+                        "h-5 w-5",
+                        isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+                      )} />
+                      <span>{item.name}</span>
+                      {isActive && (
+                        <div className="ml-auto h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        {/* User section - fixed at bottom */}
-        <div className="border-t border-sidebar-border p-4 shrink-0">
+        {/* User section */}
+        <div className="border-t border-gray-200 dark:border-gray-800 p-4 shrink-0">
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] text-white text-sm font-semibold shadow-md shrink-0">
-              {user?.email?.charAt(0).toUpperCase()}
-            </div>
-
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-orange-600 text-white">
+                {user?.email?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.email}</p>
-              <p className="text-xs text-sidebar-foreground/60">Online</p>
+              <p className="text-sm font-medium truncate">
+                {user?.email?.split('@')[0]}
+              </p>
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
+              </div>
             </div>
-
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+            <Badge variant="outline" className="text-xs">
+              {permissions?.isAdmin ? 'Admin' : permissions?.canManage ? 'Manager' : 'Member'}
+            </Badge>
           </div>
 
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full justify-start gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             onClick={signOut}
           >
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span className="truncate">Sign out</span>
+            <LogOut className="h-4 w-4" />
+            <span>Sign out</span>
           </Button>
         </div>
       </aside>
 
-      {/* Main content - scrolls independently */}
+      {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navbar */}
-        <header className="flex h-16 items-center gap-4 border-b bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm px-4 shrink-0">
+        <header className="flex h-16 items-center gap-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 shrink-0">
           {/* Mobile menu button */}
-          <button 
+          <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
           >
-            <Menu className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+            <Menu className="h-5 w-5" />
           </button>
 
-          {/* Search bar - hidden on mobile */}
+          {/* Search */}
           <div className="hidden md:flex flex-1 max-w-md">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="search"
                 placeholder="Search..."
-                className="pl-9 w-full bg-slate-50 dark:bg-slate-800 border-0 focus-visible:ring-1 focus-visible:ring-[#1E3A8A]"
+                className="pl-9 w-full bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
 
-          {/* Mobile search button */}
+          {/* Mobile search */}
           <Button
             variant="ghost"
             size="icon"
@@ -389,27 +510,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* Right side icons */}
+          {/* Right side */}
           <div className="flex items-center gap-2 ml-auto">
-            {/* Notifications Dropdown - Enhanced */}
+            {/* Notifications */}
             <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <>
-                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#C2410C] rounded-full text-[10px] text-white flex items-center justify-center animate-pulse">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#C2410C] rounded-full animate-ping opacity-75" />
-                    </>
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-600 rounded-full text-xs text-white flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-96 p-0">
-                {/* Header */}
+              <DropdownMenuContent align="end" className="w-96">
                 <div className="flex items-center justify-between p-4 border-b">
-                  <DropdownMenuLabel className="p-0 text-base font-semibold">
+                  <DropdownMenuLabel className="p-0 font-semibold">
                     Notifications
                   </DropdownMenuLabel>
                   {unreadCount > 0 && (
@@ -417,7 +534,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       variant="ghost"
                       size="sm"
                       onClick={markAllAsRead}
-                      className="text-xs text-[#1E3A8A] hover:text-[#C2410C] h-auto py-1"
+                      className="text-xs text-blue-600"
                     >
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Mark all as read
@@ -425,21 +542,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   )}
                 </div>
 
-                {/* Notifications List */}
-                <div className="max-h-[400px] overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto">
                   {loading ? (
                     <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E3A8A]" />
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
                     </div>
                   ) : notifications.length === 0 ? (
-                    <div className="text-center py-12 px-4">
-                      <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
-                        <Bell className="h-6 w-6 text-gray-400" />
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        We'll notify you when something arrives
-                      </p>
+                    <div className="text-center py-12">
+                      <Bell className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-sm text-gray-500">No notifications</p>
                     </div>
                   ) : (
                     notifications.map((notification) => (
@@ -447,79 +558,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         key={notification.id}
                         onClick={() => handleNotificationClick(notification)}
                         className={cn(
-                          "flex flex-col items-start p-4 cursor-pointer border-b last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
-                          !notification.read && "bg-[#1E3A8A]/5"
+                          "flex items-start gap-3 p-4 cursor-pointer border-b last:border-0",
+                          !notification.read && "bg-blue-50 dark:bg-blue-950/50"
                         )}
                       >
-                        <div className="flex items-start gap-3 w-full">
-                          {/* Icon */}
-                          <div className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                            !notification.read ? "bg-[#1E3A8A]/10" : "bg-gray-100 dark:bg-gray-800"
-                          )}>
-                            {getNotificationIcon(notification.type)}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className={cn(
-                                "text-sm font-medium truncate",
-                                !notification.read && "text-[#1E3A8A]"
-                              )}>
-                                {notification.title}
-                              </p>
-                              <span className="text-xs text-gray-500 whitespace-nowrap">
-                                {timeAgo(notification.created_at)}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">
-                              {notification.message}
-                            </p>
-                            {notification.data?.amount && (
-                              <p className="text-xs font-medium text-[#C2410C] mt-1">
-                                {notification.data.amount}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Delete button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100"
-                            onClick={(e) => deleteNotification(notification.id, e)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                        <div className="shrink-0">
+                          {getNotificationIcon(notification.type)}
                         </div>
-
-                        {/* Unread indicator */}
-                        {!notification.read && (
-                          <div className="absolute left-2 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-[#1E3A8A]" />
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{notification.title}</p>
+                          <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {timeAgo(notification.created_at)}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => deleteNotification(notification.id, e)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </DropdownMenuItem>
                     ))
                   )}
                 </div>
-
-                {/* Footer */}
-                {notifications.length > 0 && (
-                  <div className="border-t p-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full text-xs text-[#1E3A8A] hover:text-[#C2410C]"
-                      onClick={() => {
-                        setNotificationsOpen(false);
-                        // Navigate to notifications page if you have one
-                        // window.location.href = '/dashboard/notifications';
-                      }}
-                    >
-                      View all notifications
-                    </Button>
-                  </div>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -527,23 +591,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" className="hidden sm:flex">
               <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
             </Button>
 
-            {/* Profile dropdown */}
+            {/* Profile */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 px-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-orange-600 text-white">
                       {user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden lg:block text-left">
                     <p className="text-sm font-medium">{user?.email?.split('@')[0]}</p>
-                    <p className="text-xs text-muted-foreground">Online</p>
+                    <p className="text-xs text-gray-500">
+                      {permissions?.isAdmin ? 'Administrator' : 'Team Member'}
+                    </p>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground hidden lg:block" />
+                  <ChevronDown className="h-4 w-4 text-gray-500 hidden lg:block" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -556,22 +621,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard/settings?tab=billing" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                  <Link to="/dashboard/organization" className="cursor-pointer">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    <span>Organization</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/help" className="cursor-pointer">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Help & Support</span>
+                  <Link to="/dashboard/billing" className="cursor-pointer">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Billing</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="text-red-600 focus:text-red-600" 
-                  onClick={signOut}
-                >
+                <DropdownMenuItem onClick={signOut} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
                 </DropdownMenuItem>
@@ -580,23 +642,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Mobile search bar (when open) */}
+        {/* Mobile search */}
         {searchOpen && (
-          <div className="md:hidden p-4 border-b bg-white dark:bg-slate-900">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="pl-9 w-full"
-                autoFocus
-              />
-            </div>
+          <div className="md:hidden p-4 border-b bg-white dark:bg-gray-900">
+            <Input
+              type="search"
+              placeholder="Search..."
+              className="w-full"
+              autoFocus
+            />
           </div>
         )}
 
-        {/* Main content area - scrolls, full width */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+        {/* Main content - FULL WIDTH with no padding */}
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   
   // Get the site URL from env, with fallbacks
   const siteUrl = process.env.VITE_SITE_URL || 
-                  (isProd ? "https://schedule.pasbestventures.com" : "http://localhost:8080");
+                  (isProd ? "https://schedule.pasbestventures.com" : "https://schedulo.internal");
   
   console.log(`🚀 Building for ${mode} mode with URL: ${siteUrl}`);
 
@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: 8080,
+      allowedHosts: ["schedulo.internal", "localhost"],
       hmr: {
         overlay: false,
       },
@@ -33,5 +34,6 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_SITE_URL': JSON.stringify(siteUrl),
       'import.meta.env.VITE_IS_PRODUCTION': JSON.stringify(isProd),
     },
+    
   };
 });

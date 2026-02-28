@@ -16,7 +16,19 @@ import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 import Teams from "./pages/Teams";
+import TeamManagement from "./pages/Teams";
 import Settings from "./pages/Settings";
+import OrganizationSettings from "./pages/OrganizationSettings"; // NEW: Org-level settings
+import Departments from "./pages/Departments"; // NEW: Department management
+import TeamAnalytics from "./pages/TeamAnalytics"; // NEW: Team performance analytics
+import TeamBookings from "./pages/TeamBookings"; // NEW: Team-wide bookings view
+import TeamAvailability from "./pages/TeamAvailability"; // NEW: Team availability overview
+import TeamEvents from "./pages/TeamEvents"; // NEW: Team event types
+import Invitations from "./pages/Invitations"; // NEW: Manage team invitations
+import Billing from "./pages/Billing"; // NEW: Organization billing
+import Usage from "./pages/Usage"; // NEW: Team usage analytics
+import Integrations from "./pages/Integrations"; // NEW: Team integrations
+import Security from "./pages/Security"; // NEW: Team security settings
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,7 +85,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-         <Toaster/>
+        <Toaster />
         <Sonner />
         <BrowserRouter
           future={{
@@ -104,12 +116,19 @@ const App = () => {
               <Route path="/:username" element={<BookingPage />} />
               <Route path="/:username/:eventSlug" element={<BookingPage />} />
               
-              {/* Dashboard routes - protected, require authentication */}
+              {/* ============================================
+                  DASHBOARD ROUTES - Protected, require authentication
+                  ============================================ */}
+              
+              {/* Main Dashboard */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
               } />
+              
+              {/* ===== INDIVIDUAL USER ROUTES ===== */}
+              {/* Personal scheduling routes */}
               <Route path="/dashboard/events" element={
                 <ProtectedRoute>
                   <EventTypes />
@@ -125,14 +144,104 @@ const App = () => {
                   <Bookings />
                 </ProtectedRoute>
               } />
+              
+              {/* ===== TEAM MANAGEMENT ROUTES ===== */}
+              {/* Main team overview */}
               <Route path="/dashboard/team" element={
                 <ProtectedRoute>
-                  <Teams/>
+                  <Teams />
                 </ProtectedRoute>
               } />
+              
+              {/* Detailed team management (your current page) */}
+              <Route path="/dashboard/team/members" element={
+                <ProtectedRoute>
+                  <TeamManagement />
+                </ProtectedRoute>
+              } />
+              
+              {/* Department management */}
+              <Route path="/dashboard/team/departments" element={
+                <ProtectedRoute>
+                  <Departments />
+                </ProtectedRoute>
+              } />
+              
+              {/* Team invitations */}
+              <Route path="/dashboard/team/invitations" element={
+                <ProtectedRoute>
+                  <Invitations />
+                </ProtectedRoute>
+              } />
+              
+              {/* Team bookings overview */}
+              <Route path="/dashboard/team/bookings" element={
+                <ProtectedRoute>
+                  <TeamBookings />
+                </ProtectedRoute>
+              } />
+              
+              {/* Team availability calendar */}
+              <Route path="/dashboard/team/availability" element={
+                <ProtectedRoute>
+                  <TeamAvailability />
+                </ProtectedRoute>
+              } />
+              
+              {/* Team event types */}
+              <Route path="/dashboard/team/events" element={
+                <ProtectedRoute>
+                  <TeamEvents />
+                </ProtectedRoute>
+              } />
+              
+              {/* Team analytics */}
+              <Route path="/dashboard/team/analytics" element={
+                <ProtectedRoute>
+                  <TeamAnalytics />
+                </ProtectedRoute>
+              } />
+              
+              {/* ===== ORGANIZATION SETTINGS ===== */}
+              {/* Organization-level settings */}
+              <Route path="/dashboard/organization" element={
+                <ProtectedRoute>
+                  <OrganizationSettings />
+                </ProtectedRoute>
+              } />
+              
+              {/* Billing & subscription */}
+              <Route path="/dashboard/billing" element={
+                <ProtectedRoute>
+                  <Billing />
+                </ProtectedRoute>
+              } />
+              
+              {/* Usage & limits */}
+              <Route path="/dashboard/usage" element={
+                <ProtectedRoute>
+                  <Usage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Integrations */}
+              <Route path="/dashboard/integrations" element={
+                <ProtectedRoute>
+                  <Integrations />
+                </ProtectedRoute>
+              } />
+              
+              {/* Security settings */}
+              <Route path="/dashboard/security" element={
+                <ProtectedRoute>
+                  <Security />
+                </ProtectedRoute>
+              } />
+              
+              {/* User settings (profile, preferences) */}
               <Route path="/dashboard/settings" element={
                 <ProtectedRoute>
-                  <Settings/>
+                  <Settings />
                 </ProtectedRoute>
               } />
               
