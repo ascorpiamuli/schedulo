@@ -164,23 +164,39 @@ export interface UpdateEventTypeData extends Partial<CreateEventTypeData> {
 
 // Helper function to calculate duration from one_time_event
 function calculateDurationFromOneTimeEvent(oneTimeEvent: OneTimeEventData | null): number {
-  if (!oneTimeEvent) return 30;
+  console.log("🧮 [calculateDurationFromOneTimeEvent] Calculating duration from:", oneTimeEvent);
+  
+  if (!oneTimeEvent) {
+    console.log("🧮 [calculateDurationFromOneTimeEvent] No oneTimeEvent provided, returning default 30");
+    return 30;
+  }
   
   const { start_time, end_time } = oneTimeEvent;
+  console.log(`🧮 [calculateDurationFromOneTimeEvent] Start: ${start_time}, End: ${end_time}`);
+  
   const [startH, startM] = start_time.split(':').map(Number);
   const [endH, endM] = end_time.split(':').map(Number);
   
   const startTotal = startH * 60 + startM;
   const endTotal = endH * 60 + endM;
   
-  return endTotal - startTotal;
+  const duration = endTotal - startTotal;
+  console.log(`🧮 [calculateDurationFromOneTimeEvent] Calculated duration: ${duration} minutes`);
+  
+  return duration;
 }
 
 // Helper function to fetch user data for team members
 async function fetchUsersForTeamMembers(teamMembers: any[]): Promise<any[]> {
-  if (!teamMembers || teamMembers.length === 0) return [];
+  console.log("👥 [fetchUsersForTeamMembers] Fetching user data for", teamMembers?.length || 0, "team members");
+  
+  if (!teamMembers || teamMembers.length === 0) {
+    console.log("👥 [fetchUsersForTeamMembers] No team members to fetch");
+    return [];
+  }
   
   const userIds = teamMembers.map(tm => tm.user_id);
+  console.log("👥 [fetchUsersForTeamMembers] User IDs:", userIds);
   
   const { data: users, error } = await supabase
     .from('profiles')
@@ -188,214 +204,262 @@ async function fetchUsersForTeamMembers(teamMembers: any[]): Promise<any[]> {
     .in('user_id', userIds);
   
   if (error) {
-    console.error("Error fetching user profiles:", error);
+    console.error("❌ [fetchUsersForTeamMembers] Error fetching user profiles:", error);
     return teamMembers;
   }
   
+  console.log("👥 [fetchUsersForTeamMembers] Found", users?.length || 0, "user profiles");
+  
   const userMap = new Map(users?.map(u => [u.user_id, u]) || []);
   
-  return teamMembers.map(tm => ({
+  const enrichedMembers = teamMembers.map(tm => ({
     ...tm,
     user: userMap.get(tm.user_id) || { email: 'Unknown', full_name: null }
   }));
+  
+  console.log("👥 [fetchUsersForTeamMembers] Enriched team members:", enrichedMembers.length);
+  return enrichedMembers;
 }
-
-// ============================================
-// MAIN HOOKS
-// ============================================
-
-// hooks/use-event-types.ts - Update the useEventTypes function
-
-// hooks/use-event-types.ts - Fix the query
 
 export function useEventTypes(scope?: EventScope, departmentId?: string) {
   const { user } = useAuth();
-  const { data: organization } = useOrganization();
-  const { data: currentTeamMember } = useCurrentTeamMember();
+  const { data: teamMembers } = useCurrentTeamMember();
+  
+  // Create a query key that includes all relevant info
+  const orgIds = teamMembers?.map(tm => tm.organization_id).join(',') || '';
+  const deptNames = teamMembers?.filter(tm => tm.department).map(tm => tm.department).join(',') || '';
+  
+  console.log("🏁 [useEventTypes] Hook called with:", { 
+    scope, 
+    departmentId, 
+    userId: user?.id,
+    teamMembers: teamMembers?.length,
+    orgIds,
+    deptNames
+  });
   
   return useQuery({
-    queryKey: ["event_types", scope, departmentId, organization?.id, user?.id, currentTeamMember?.department],
+    queryKey: ["event_types", scope, departmentId, user?.id, orgIds, deptNames],
     queryFn: async () => {
-      console.log("🔍 [useEventTypes] Starting fetch with params:", { 
-        scope, 
-        departmentId, 
-        userId: user?.id,
-        orgId: organization?.id,
-        userDepartment: currentTeamMember?.department
-      });
+      console.log("🔍 [useEventTypes] Starting fetch...");
       
       if (!user) {
-        throw new Error("Not authenticated");
+        console.error("❌ [useEventTypes] No authenticated user");
+        return []; // Return empty array instead of throwing
       }
 
-      // Base query - select from event_types with relations
-      let query = supabase
-        .from("event_types")
-        .select(`
-          *,
-          event_team_members (
-            id,
-            user_id,
-            role,
-            is_required,
-            created_at,
-            updated_at
-          ),
-          organization:organizations!event_types_organization_id_fkey (
-            id,
-            name,
-            slug
-          ),
-          department:departments!event_types_department_id_fkey (
-            id,
-            name,
-            color
-          )
-        `);
+      if (!teamMembers || teamMembers.length === 0) {
+        console.log("📭 [useEventTypes] No team members found");
+        return []; // Return empty array
+      }
 
-      // Apply filters based on scope
-      if (scope === 'personal') {
-        query = query
-          .eq('user_id', user.id)
-          .eq('scope', 'personal');
-      } 
-      else if (scope === 'organization' && organization) {
-        // Organization events - accessible to all team members
-        query = query
-          .eq('organization_id', organization.id)
-          .eq('scope', 'organization');
-      } 
-      else if (scope === 'department' && departmentId) {
-        // Specific department events
-        query = query
-          .eq('department_id', departmentId)
-          .eq('scope', 'department');
-      } 
-      else {
-        // No filter - show ALL events the user has access to:
-        // 1. Personal events (created by user)
-        // 2. Organization events (if user is in an organization)
-        // 3. Department events (if user is in a department)
-        
-        if (organization) {
-          // User is in an organization
-          if (currentTeamMember?.department) {
-            // First, get the department IDs for the user's department name
-            const { data: departments } = await supabase
+      try {
+        let query = supabase
+          .from("event_types")
+          .select(`
+            *,
+            event_team_members (
+              id,
+              user_id,
+              role,
+              is_required,
+              created_at,
+              updated_at
+            ),
+            organization:organizations!event_types_organization_id_fkey (
+              id,
+              name,
+              slug
+            ),
+            department:departments!event_types_department_id_fkey (
+              id,
+              name,
+              color
+            )
+          `);
+
+        // Apply filters based on scope
+        if (scope === 'personal') {
+          query = query
+            .eq('user_id', user.id)
+            .eq('scope', 'personal');
+        } 
+        else if (scope === 'organization') {
+          // Get all organizations the user belongs to
+          const orgIds = teamMembers.map(tm => tm.organization_id);
+          query = query
+            .in('organization_id', orgIds)
+            .eq('scope', 'organization');
+        } 
+        else if (scope === 'department') {
+          // Get all departments the user belongs to
+          const userDepts = teamMembers
+            .filter(tm => tm.department)
+            .map(tm => tm.department);
+          
+          if (userDepts.length > 0) {
+            // Get department IDs for these department names
+            const { data: departments, error: deptError } = await supabase
               .from('departments')
-              .select('id')
-              .eq('organization_id', organization.id)
-              .eq('name', currentTeamMember.department);
-
-            const departmentIds = departments?.map(d => d.id) || [];
+              .select('id, organization_id')
+              .in('name', userDepts);
+              
+            if (deptError) {
+              console.error("❌ [useEventTypes] Error fetching departments:", deptError);
+              return [];
+            }
             
-            if (departmentIds.length > 0) {
-              // User is in a department - show personal + organization + their department events
+            const deptIds = departments?.map(d => d.id) || [];
+            console.log("🔍 [useEventTypes] Department IDs:", deptIds);
+            
+            if (deptIds.length > 0) {
               query = query
-                .or(
-                  `and(user_id.eq.${user.id},scope.eq.personal),` +
-                  `and(scope.eq.organization,organization_id.eq.${organization.id}),` +
-                  `and(scope.eq.department,department_id.in.(${departmentIds.join(',')}))`
-                );
+                .in('department_id', deptIds)
+                .eq('scope', 'department');
             } else {
-              // Department name found but no matching IDs (shouldn't happen)
-              query = query
-                .or(
-                  `and(user_id.eq.${user.id},scope.eq.personal),` +
-                  `and(scope.eq.organization,organization_id.eq.${organization.id})`
-                );
+              return []; // No departments found
             }
           } else {
-            // User in organization but no department - show personal + organization events only
-            query = query
-              .or(
-                `and(user_id.eq.${user.id},scope.eq.personal),` +
-                `and(scope.eq.organization,organization_id.eq.${organization.id})`
-              );
+            return []; // User has no departments
           }
-        } else {
-          // No organization - only personal events
-          query = query.eq('user_id', user.id);
+        } 
+        else {
+          // Show ALL accessible events across all orgs
+          const orgIds = teamMembers.map(tm => tm.organization_id);
+          const userDepts = teamMembers
+            .filter(tm => tm.department)
+            .map(tm => tm.department);
+          
+          console.log("🔍 [useEventTypes] All orgs:", orgIds);
+          console.log("🔍 [useEventTypes] All depts:", userDepts);
+          
+          let conditions = [
+            `and(user_id.eq.${user.id},scope.eq.personal)`
+          ];
+          
+          if (orgIds.length > 0) {
+            conditions.push(`and(scope.eq.organization,organization_id.in.(${orgIds.join(',')}))`);
+          }
+          
+          if (userDepts.length > 0) {
+            // Get department IDs for these department names
+            const { data: departments, error: deptError } = await supabase
+              .from('departments')
+              .select('id')
+              .in('name', userDepts);
+              
+            if (deptError) {
+              console.error("❌ [useEventTypes] Error fetching departments:", deptError);
+            } else {
+              const deptIds = departments?.map(d => d.id) || [];
+              console.log("🔍 [useEventTypes] Department IDs:", deptIds);
+              
+              if (deptIds.length > 0) {
+                conditions.push(`and(scope.eq.department,department_id.in.(${deptIds.join(',')}))`);
+              }
+            }
+          }
+          
+          console.log("🔍 [useEventTypes] OR conditions:", conditions);
+          query = query.or(conditions.join(','));
         }
+
+        console.log("🚀 [useEventTypes] Executing query...");
+        const { data, error } = await query.order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("❌ [useEventTypes] Query error:", error);
+          return []; // Return empty array on error
+        }
+
+        console.log("✅ [useEventTypes] Raw data received:", data?.length || 0, "events");
+        
+        if (!data || data.length === 0) {
+          console.log("📭 [useEventTypes] No events found");
+          return [];
+        }
+
+        // Fetch user data for team members
+        const eventsWithUsers = await Promise.all(
+          data.map(async (event) => {
+            if (event.event_team_members && event.event_team_members.length > 0) {
+              const teamMembersWithUsers = await fetchUsersForTeamMembers(event.event_team_members);
+              return {
+                ...event,
+                team_members_with_users: teamMembersWithUsers,
+                event_team_members: undefined
+              };
+            }
+            return event;
+          })
+        );
+
+        // Transform the data
+        const transformedData = eventsWithUsers.map(event => ({
+          ...event,
+          reminder_settings: event.reminder_settings || { '24h': true, '1h': false, '15min': false },
+          custom_fields: event.custom_fields || [],
+          max_attendees: event.max_attendees ?? 1,
+          min_attendees: event.min_attendees ?? 1,
+          allow_additional_guests: event.allow_additional_guests ?? false,
+          guests_can_invite_others: event.guests_can_invite_others ?? false,
+          require_approval: event.require_approval ?? false,
+          waiting_list_enabled: event.waiting_list_enabled ?? false,
+          payment_required_per_attendee: event.payment_required_per_attendee ?? false,
+          show_attendees_to_guests: event.show_attendees_to_guests ?? true,
+          generate_meeting_link: event.generate_meeting_link ?? true,
+          meeting_provider: event.meeting_provider || 'google_meet',
+          host_join_first: event.host_join_first ?? true,
+          schedule_type: event.schedule_type || 'flexible',
+          one_time_event: event.one_time_event || null,
+        }));
+
+        const personal = transformedData.filter(e => e.scope === 'personal').length;
+        const org = transformedData.filter(e => e.scope === 'organization').length;
+        const dept = transformedData.filter(e => e.scope === 'department').length;
+        console.log(`📊 [useEventTypes] Final event counts: ${personal} personal, ${org} organization, ${dept} department`);
+
+        return transformedData;
+        
+      } catch (error) {
+        console.error("❌ [useEventTypes] Unexpected error:", error);
+        return []; // Return empty array on any error
       }
-
-      console.log("🚀 [useEventTypes] Executing query...");
-      const { data, error } = await query.order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("❌ [useEventTypes] Query error:", error);
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      // Fetch user data for team members
-      const eventsWithUsers = await Promise.all(
-        data.map(async (event) => {
-          if (event.event_team_members && event.event_team_members.length > 0) {
-            const teamMembersWithUsers = await fetchUsersForTeamMembers(event.event_team_members);
-            return {
-              ...event,
-              team_members_with_users: teamMembersWithUsers,
-              event_team_members: undefined // Remove raw data
-            };
-          }
-          return event;
-        })
-      );
-
-      // Transform the data
-      const transformedData = eventsWithUsers.map(event => ({
-        ...event,
-        reminder_settings: event.reminder_settings || { '24h': true, '1h': false, '15min': false },
-        custom_fields: event.custom_fields || [],
-        max_attendees: event.max_attendees ?? 1,
-        min_attendees: event.min_attendees ?? 1,
-        allow_additional_guests: event.allow_additional_guests ?? false,
-        guests_can_invite_others: event.guests_can_invite_others ?? false,
-        require_approval: event.require_approval ?? false,
-        waiting_list_enabled: event.waiting_list_enabled ?? false,
-        payment_required_per_attendee: event.payment_required_per_attendee ?? false,
-        show_attendees_to_guests: event.show_attendees_to_guests ?? true,
-        generate_meeting_link: event.generate_meeting_link ?? true,
-        meeting_provider: event.meeting_provider || 'google_meet',
-        host_join_first: event.host_join_first ?? true,
-        schedule_type: event.schedule_type || 'flexible',
-        one_time_event: event.one_time_event || null,
-      }));
-
-      const personal = transformedData.filter(e => e.scope === 'personal').length;
-      const org = transformedData.filter(e => e.scope === 'organization').length;
-      const dept = transformedData.filter(e => e.scope === 'department').length;
-      console.log(`📊 [useEventTypes] Events: ${personal} personal, ${org} organization, ${dept} department`);
-
-      return transformedData as EventType[];
     },
-    enabled: !!user,
+    enabled: !!user && !!teamMembers, // Only run when we have user and team members
     retry: 1,
     staleTime: 1000 * 60 * 5,
   });
 }
 export function usePersonalEvents() {
+  console.log("🏁 [usePersonalEvents] Hook called");
   return useEventTypes('personal');
 }
 
 export function useOrganizationEvents() {
+  console.log("🏁 [useOrganizationEvents] Hook called");
   return useEventTypes('organization');
 }
 
 export function useDepartmentEvents(departmentId: string) {
+  console.log("🏁 [useDepartmentEvents] Hook called with departmentId:", departmentId);
   return useEventTypes('department', departmentId);
 }
 
 export function useEventTypeBySlug(userId: string | undefined, slug: string | undefined) {
+  console.log("🏁 [useEventTypeBySlug] Hook called with:", { userId, slug });
+  
   return useQuery({
     queryKey: ["event_type", userId, slug],
     queryFn: async () => {
-      if (!userId || !slug) throw new Error("User ID and slug are required");
+      console.log("🔍 [useEventTypeBySlug] Fetching event by slug:", { userId, slug });
+      
+      if (!userId || !slug) {
+        console.error("❌ [useEventTypeBySlug] Missing required parameters");
+        throw new Error("User ID and slug are required");
+      }
 
+      console.log("🔍 [useEventTypeBySlug] Building query...");
       const { data, error } = await supabase
         .from("event_types")
         .select(`
@@ -425,6 +489,7 @@ export function useEventTypeBySlug(userId: string | undefined, slug: string | un
         .maybeSingle();
 
       if (error) {
+        console.error("❌ [useEventTypeBySlug] Query error:", error);
         if (error.code === 'PGRST116') {
           throw new Error("Event not found");
         }
@@ -432,16 +497,20 @@ export function useEventTypeBySlug(userId: string | undefined, slug: string | un
       }
 
       if (!data) {
+        console.log("📭 [useEventTypeBySlug] No event found for slug:", slug);
         throw new Error("Event not found");
       }
+
+      console.log("✅ [useEventTypeBySlug] Raw event data found:", data.title);
 
       // Fetch user data for team members
       let teamMembersWithUsers = [];
       if (data.event_team_members && data.event_team_members.length > 0) {
+        console.log("👥 [useEventTypeBySlug] Fetching user data for", data.event_team_members.length, "team members");
         teamMembersWithUsers = await fetchUsersForTeamMembers(data.event_team_members);
       }
 
-      return {
+      const transformedData = {
         ...data,
         team_members_with_users: teamMembersWithUsers,
         reminder_settings: data.reminder_settings || { '24h': true, '1h': false, '15min': false },
@@ -460,33 +529,51 @@ export function useEventTypeBySlug(userId: string | undefined, slug: string | un
         schedule_type: data.schedule_type || 'flexible',
         one_time_event: data.one_time_event || null,
       } as EventType;
+      
+      console.log("✅ [useEventTypeBySlug] Returning transformed event:", transformedData.title);
+      return transformedData;
     },
     enabled: !!userId && !!slug,
     retry: false,
   });
 }
-// hooks/use-team-management.ts (add this hook)
 
-export const useCurrentTeamMember = () => {
+export const useCurrentTeamMember = (organizationId?: string) => {
   const { user } = useAuth();
   
+  console.log("🏁 [useCurrentTeamMember] Hook called with user:", user?.id, "org:", organizationId);
+  
   return useQuery({
-    queryKey: ['currentTeamMember', user?.id],
+    queryKey: ['currentTeamMember', user?.id, organizationId],
     queryFn: async () => {
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('team_members')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching current team member:', error);
+      console.log("🔍 [useCurrentTeamMember] Fetching team member for user:", user?.id);
+      
+      if (!user) {
+        console.log("🔍 [useCurrentTeamMember] No user, returning null");
         return null;
       }
 
-      return data;
+      let query = supabase
+        .from('team_members')
+        .select('*')
+        .eq('user_id', user.id);
+
+      // If organization ID is provided, filter by it
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ [useCurrentTeamMember] Error fetching team members:', error);
+        return null;
+      }
+
+      console.log("✅ [useCurrentTeamMember] Found", data?.length || 0, "team member records");
+      
+      // Return ALL team member records, not just one
+      return data || [];
     },
     enabled: !!user,
   });
@@ -494,12 +581,23 @@ export const useCurrentTeamMember = () => {
 export function useEventType(id: string | undefined) {
   const { user } = useAuth();
   
+  console.log("🏁 [useEventType] Hook called with id:", id, "user:", user?.id);
+  
   return useQuery({
     queryKey: ["event_type", id],
     queryFn: async () => {
-      if (!id) throw new Error("Event ID is required");
-      if (!user) throw new Error("Not authenticated");
+      console.log("🔍 [useEventType] Fetching event by id:", id);
+      
+      if (!id) {
+        console.error("❌ [useEventType] No event ID provided");
+        throw new Error("Event ID is required");
+      }
+      if (!user) {
+        console.error("❌ [useEventType] No authenticated user");
+        throw new Error("Not authenticated");
+      }
 
+      console.log("🔍 [useEventType] Building query...");
       const { data, error } = await supabase
         .from("event_types")
         .select(`
@@ -527,56 +625,80 @@ export function useEventType(id: string | undefined) {
         .single();
 
       if (error) {
+        console.error("❌ [useEventType] Query error:", error);
         if (error.code === 'PGRST116') {
           throw new Error("Event not found");
         }
         throw error;
       }
 
+      console.log("✅ [useEventType] Raw event data found:", data.title);
+
       // Check access
+      console.log("🔍 [useEventType] Checking access for user:", user.id);
       let hasAccess = data.user_id === user.id;
+      console.log("🔍 [useEventType] Is owner?", hasAccess);
       
       if (!hasAccess && data.scope === 'organization' && data.organization_id) {
-        const { data: member } = await supabase
+        console.log("🔍 [useEventType] Checking organization access for org:", data.organization_id);
+        const { data: member, error: memberError } = await supabase
           .from('team_members')
           .select('id')
           .eq('user_id', user.id)
           .eq('organization_id', data.organization_id)
           .maybeSingle();
           
+        if (memberError) {
+          console.error("❌ [useEventType] Error checking team membership:", memberError);
+        }
+        
         hasAccess = !!member;
+        console.log("🔍 [useEventType] Organization access result:", hasAccess);
       }
       
       if (!hasAccess && data.scope === 'department' && data.department_id) {
-        const { data: dept } = await supabase
+        console.log("🔍 [useEventType] Checking department access for dept:", data.department_id);
+        const { data: dept, error: deptError } = await supabase
           .from('departments')
           .select('organization_id')
           .eq('id', data.department_id)
           .single();
           
+        if (deptError) {
+          console.error("❌ [useEventType] Error fetching department:", deptError);
+        }
+          
         if (dept) {
-          const { data: member } = await supabase
+          console.log("🔍 [useEventType] Department belongs to org:", dept.organization_id);
+          const { data: member, error: memberError } = await supabase
             .from('team_members')
             .select('id')
             .eq('user_id', user.id)
             .eq('organization_id', dept.organization_id)
             .maybeSingle();
             
+          if (memberError) {
+            console.error("❌ [useEventType] Error checking team membership:", memberError);
+          }
+            
           hasAccess = !!member;
+          console.log("🔍 [useEventType] Department access result:", hasAccess);
         }
       }
 
       if (!hasAccess) {
+        console.error("❌ [useEventType] User does not have permission to view this event");
         throw new Error("You don't have permission to view this event");
       }
 
       // Fetch user data for team members
       let teamMembersWithUsers = [];
       if (data.event_team_members && data.event_team_members.length > 0) {
+        console.log("👥 [useEventType] Fetching user data for", data.event_team_members.length, "team members");
         teamMembersWithUsers = await fetchUsersForTeamMembers(data.event_team_members);
       }
 
-      return {
+      const transformedData = {
         ...data,
         team_members_with_users: teamMembersWithUsers,
         reminder_settings: data.reminder_settings || { '24h': true, '1h': false, '15min': false },
@@ -595,17 +717,28 @@ export function useEventType(id: string | undefined) {
         schedule_type: data.schedule_type || 'flexible',
         one_time_event: data.one_time_event || null,
       } as EventType;
+      
+      console.log("✅ [useEventType] Returning transformed event:", transformedData.title);
+      return transformedData;
     },
     enabled: !!id && !!user,
   });
 }
 
 export function usePublicEventTypeBySlug(userId: string | undefined, slug: string | undefined) {
+  console.log("🏁 [usePublicEventTypeBySlug] Hook called with:", { userId, slug });
+  
   return useQuery({
     queryKey: ["public_event_type", userId, slug],
     queryFn: async () => {
-      if (!userId || !slug) throw new Error("User ID and slug are required");
+      console.log("🔍 [usePublicEventTypeBySlug] Fetching public event by slug:", { userId, slug });
+      
+      if (!userId || !slug) {
+        console.error("❌ [usePublicEventTypeBySlug] Missing required parameters");
+        throw new Error("User ID and slug are required");
+      }
 
+      console.log("🔍 [usePublicEventTypeBySlug] Building query...");
       const { data, error } = await supabase
         .from("event_types")
         .select(`
@@ -635,6 +768,7 @@ export function usePublicEventTypeBySlug(userId: string | undefined, slug: strin
         .maybeSingle();
 
       if (error) {
+        console.error("❌ [usePublicEventTypeBySlug] Query error:", error);
         if (error.code === 'PGRST116') {
           throw new Error("Event not found");
         }
@@ -642,16 +776,20 @@ export function usePublicEventTypeBySlug(userId: string | undefined, slug: strin
       }
 
       if (!data) {
+        console.log("📭 [usePublicEventTypeBySlug] No event found for slug:", slug);
         throw new Error("Event not found");
       }
+
+      console.log("✅ [usePublicEventTypeBySlug] Raw event data found:", data.title);
 
       // Fetch user data for team members
       let teamMembersWithUsers = [];
       if (data.event_team_members && data.event_team_members.length > 0) {
+        console.log("👥 [usePublicEventTypeBySlug] Fetching user data for", data.event_team_members.length, "team members");
         teamMembersWithUsers = await fetchUsersForTeamMembers(data.event_team_members);
       }
 
-      return {
+      const transformedData = {
         ...data,
         team_members_with_users: teamMembersWithUsers,
         reminder_settings: data.reminder_settings || { '24h': true, '1h': false, '15min': false },
@@ -670,6 +808,9 @@ export function usePublicEventTypeBySlug(userId: string | undefined, slug: strin
         schedule_type: data.schedule_type || 'flexible',
         one_time_event: data.one_time_event || null,
       } as EventType;
+      
+      console.log("✅ [usePublicEventTypeBySlug] Returning transformed event:", transformedData.title);
+      return transformedData;
     },
     enabled: !!userId && !!slug,
     retry: false,
@@ -680,14 +821,23 @@ export function useCreateEventType() {
   const qc = useQueryClient();
   const { user } = useAuth();
   
+  console.log("🏁 [useCreateEventType] Hook initialized");
+  
   return useMutation({
     mutationFn: async (data: CreateEventTypeData) => {
-      if (!user) throw new Error("Not authenticated");
+      console.log("📝 [useCreateEventType] Creating event type with data:", data);
+      
+      if (!user) {
+        console.error("❌ [useCreateEventType] No authenticated user");
+        throw new Error("Not authenticated");
+      }
       
       const { team_members, ...eventData } = data;
+      console.log("📝 [useCreateEventType] Separated team_members:", team_members?.length || 0, "members");
       
       let duration = eventData.duration;
       if (eventData.schedule_type === 'one_time' && eventData.one_time_event) {
+        console.log("📝 [useCreateEventType] One-time event detected, calculating duration");
         duration = calculateDurationFromOneTimeEvent(eventData.one_time_event);
       }
       
@@ -712,15 +862,23 @@ export function useCreateEventType() {
         duration,
       };
 
+      console.log("📝 [useCreateEventType] Inserting event with defaults:", eventWithDefaults);
+
       const { data: eventType, error } = await supabase
         .from("event_types")
         .insert(eventWithDefaults)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [useCreateEventType] Error creating event:", error);
+        throw error;
+      }
+
+      console.log("✅ [useCreateEventType] Event created successfully:", eventType);
 
       if (team_members && team_members.length > 0) {
+        console.log("👥 [useCreateEventType] Adding", team_members.length, "team members");
         const { error: teamError } = await supabase
           .from("event_team_members")
           .insert(
@@ -730,13 +888,22 @@ export function useCreateEventType() {
             }))
           );
 
-        if (teamError) throw teamError;
+        if (teamError) {
+          console.error("❌ [useCreateEventType] Error adding team members:", teamError);
+          throw teamError;
+        }
+        
+        console.log("✅ [useCreateEventType] Team members added successfully");
       }
 
       return eventType;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("✅ [useCreateEventType] Mutation success, invalidating queries");
       qc.invalidateQueries({ queryKey: ["event_types"] });
+    },
+    onError: (error) => {
+      console.error("❌ [useCreateEventType] Mutation error:", error);
     },
   });
 }
@@ -744,12 +911,18 @@ export function useCreateEventType() {
 export function useUpdateEventType() {
   const qc = useQueryClient();
   
+  console.log("🏁 [useUpdateEventType] Hook initialized");
+  
   return useMutation({
     mutationFn: async ({ id, ...data }: UpdateEventTypeData) => {
+      console.log("📝 [useUpdateEventType] Updating event type:", { id, data });
+      
       const { team_members, ...eventData } = data;
+      console.log("📝 [useUpdateEventType] Separated team_members:", team_members?.length || 0, "members");
       
       let duration = eventData.duration;
       if (eventData.schedule_type === 'one_time' && eventData.one_time_event) {
+        console.log("📝 [useUpdateEventType] One-time event detected, calculating duration");
         duration = calculateDurationFromOneTimeEvent(eventData.one_time_event);
       }
       
@@ -758,6 +931,8 @@ export function useUpdateEventType() {
         ...(duration ? { duration } : {})
       };
 
+      console.log("📝 [useUpdateEventType] Updating event with data:", updateData);
+
       const { data: eventType, error } = await supabase
         .from("event_types")
         .update(updateData)
@@ -765,15 +940,27 @@ export function useUpdateEventType() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [useUpdateEventType] Error updating event:", error);
+        throw error;
+      }
+
+      console.log("✅ [useUpdateEventType] Event updated successfully:", eventType);
 
       if (team_members) {
-        await supabase
+        console.log("👥 [useUpdateEventType] Updating team members - deleting existing");
+        const { error: deleteError } = await supabase
           .from("event_team_members")
           .delete()
           .eq("event_type_id", id);
+          
+        if (deleteError) {
+          console.error("❌ [useUpdateEventType] Error deleting team members:", deleteError);
+          throw deleteError;
+        }
 
         if (team_members.length > 0) {
+          console.log("👥 [useUpdateEventType] Adding", team_members.length, "new team members");
           const { error: teamError } = await supabase
             .from("event_team_members")
             .insert(
@@ -783,15 +970,24 @@ export function useUpdateEventType() {
               }))
             );
 
-          if (teamError) throw teamError;
+          if (teamError) {
+            console.error("❌ [useUpdateEventType] Error adding team members:", teamError);
+            throw teamError;
+          }
+          
+          console.log("✅ [useUpdateEventType] Team members updated successfully");
         }
       }
 
       return eventType;
     },
     onSuccess: (_, variables) => {
+      console.log("✅ [useUpdateEventType] Mutation success, invalidating queries for id:", variables.id);
       qc.invalidateQueries({ queryKey: ["event_types"] });
       qc.invalidateQueries({ queryKey: ["event_type", variables.id] });
+    },
+    onError: (error) => {
+      console.error("❌ [useUpdateEventType] Mutation error:", error);
     },
   });
 }
@@ -799,31 +995,58 @@ export function useUpdateEventType() {
 export function useDeleteEventType() {
   const qc = useQueryClient();
   
+  console.log("🏁 [useDeleteEventType] Hook initialized");
+  
   return useMutation({
     mutationFn: async (id: string) => {
-      await supabase
+      console.log("🗑️ [useDeleteEventType] Deleting event type:", id);
+      
+      console.log("🗑️ [useDeleteEventType] Deleting team members first");
+      const { error: deleteTeamError } = await supabase
         .from("event_team_members")
         .delete()
         .eq("event_type_id", id);
+        
+      if (deleteTeamError) {
+        console.error("❌ [useDeleteEventType] Error deleting team members:", deleteTeamError);
+        throw deleteTeamError;
+      }
 
+      console.log("🗑️ [useDeleteEventType] Deleting event type");
       const { error } = await supabase
         .from("event_types")
         .delete()
         .eq("id", id);
         
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [useDeleteEventType] Error deleting event type:", error);
+        throw error;
+      }
+      
+      console.log("✅ [useDeleteEventType] Event type deleted successfully");
     },
     onSuccess: () => {
+      console.log("✅ [useDeleteEventType] Mutation success, invalidating queries");
       qc.invalidateQueries({ queryKey: ["event_types"] });
+    },
+    onError: (error) => {
+      console.error("❌ [useDeleteEventType] Mutation error:", error);
     },
   });
 }
 
 export function useAvailableTeamMembers(organizationId?: string | null, departmentId?: string | null) {
+  console.log("🏁 [useAvailableTeamMembers] Hook called with:", { organizationId, departmentId });
+  
   return useQuery({
     queryKey: ["available_team_members", organizationId, departmentId],
     queryFn: async () => {
-      if (!organizationId) return [];
+      console.log("🔍 [useAvailableTeamMembers] Fetching available team members");
+      
+      if (!organizationId) {
+        console.log("🔍 [useAvailableTeamMembers] No organizationId, returning empty array");
+        return [];
+      }
 
       let query = supabase
         .from('team_members')
@@ -837,34 +1060,54 @@ export function useAvailableTeamMembers(organizationId?: string | null, departme
         .eq('status', 'active');
 
       if (departmentId) {
-        const { data: dept } = await supabase
+        console.log("🔍 [useAvailableTeamMembers] Filtering by departmentId:", departmentId);
+        const { data: dept, error: deptError } = await supabase
           .from('departments')
           .select('name')
           .eq('id', departmentId)
           .single();
           
-        if (dept) {
+        if (deptError) {
+          console.error("❌ [useAvailableTeamMembers] Error fetching department:", deptError);
+        } else {
+          console.log("🔍 [useAvailableTeamMembers] Department name:", dept?.name);
           query = query.eq('department', dept.name);
         }
       }
 
+      console.log("🔍 [useAvailableTeamMembers] Executing team members query...");
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [useAvailableTeamMembers] Error fetching team members:", error);
+        throw error;
+      }
 
-      if (!data || data.length === 0) return [];
+      console.log("✅ [useAvailableTeamMembers] Found", data?.length || 0, "team members");
+      
+      if (!data || data.length === 0) {
+        console.log("📭 [useAvailableTeamMembers] No team members found");
+        return [];
+      }
 
       // Fetch user profiles
       const userIds = data.map(m => m.user_id).filter(Boolean);
+      console.log("👥 [useAvailableTeamMembers] Fetching profiles for user IDs:", userIds);
+      
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('user_id, email, full_name, avatar_url')
         .in('user_id', userIds);
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error("❌ [useAvailableTeamMembers] Error fetching user profiles:", usersError);
+        throw usersError;
+      }
+
+      console.log("✅ [useAvailableTeamMembers] Found", users?.length || 0, "user profiles");
 
       const userMap = new Map(users?.map(u => [u.user_id, u]) || []);
 
-      return data.map(member => ({
+      const enrichedMembers = data.map(member => ({
         id: member.user_id,
         email: userMap.get(member.user_id)?.email || '',
         full_name: userMap.get(member.user_id)?.full_name,
@@ -872,6 +1115,9 @@ export function useAvailableTeamMembers(organizationId?: string | null, departme
         department: member.department,
         avatar_url: userMap.get(member.user_id)?.avatar_url
       }));
+      
+      console.log("✅ [useAvailableTeamMembers] Returning", enrichedMembers.length, "enriched team members");
+      return enrichedMembers;
     },
     enabled: !!organizationId,
   });
@@ -987,10 +1233,13 @@ export const truncateUserId = (id: string) => {
 };
 
 export const slugify = (s: string) => {
-  return s
+  console.log("🔧 [slugify] Converting string to slug:", s);
+  const slug = s
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+  console.log("🔧 [slugify] Result:", slug);
+  return slug;
 };
 
 export const getInitials = (name?: string | null, email?: string | null) => {
