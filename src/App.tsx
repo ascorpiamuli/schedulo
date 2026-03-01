@@ -1,9 +1,11 @@
+// App.tsx (only showing the relevant parts)
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth, RequireAuth } from "@/lib/auth";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -57,16 +59,18 @@ function LoadingSpinner() {
   );
 }
 
-// Protected route wrapper
+// Protected route wrapper with return URL handling
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />;
+    // Save the current path to redirect back after login
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -75,12 +79,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Public route wrapper (redirects to dashboard if already logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirect = searchParams.get('redirect');
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
   if (session) {
+    // If there's a redirect parameter, go there instead of dashboard
+    if (redirect) {
+      return <Navigate to={redirect} replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -117,80 +117,137 @@ export interface AvailableMember {
   department: string | null;
 }
 
+// New types for multi-organization support
+export interface OrganizationMembership {
+  organization_id: string;
+  role: string;
+  department: string | null;
+  joined_at: string;
+}
+
+export interface UserOrganizations {
+  memberships: OrganizationMembership[];
+  currentOrganizationId: string | null;
+}
+
 // ============================================
 // HOOKS
 // ============================================
 
 /**
- * Hook to fetch all departments with member counts and manager info
+ * Hook to get all organizations the user belongs to
  */
-export const useDepartments = (options?: { enabled?: boolean }) => {
+export const useUserOrganizations = () => {
   const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['user-organizations', user?.id],
+    queryFn: async (): Promise<OrganizationMembership[]> => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('organization_id, role, department, joined_at')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('❌ useUserOrganizations - Error:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: !!user,
+  });
+};
+// Hook to fetch multiple organization details
+export const useOrganizationsDetails = (orgIds: string[]) => {
+  return useQuery({
+    queryKey: ['organizations', orgIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name, logo_url, settings, created_at')
+        .in('id', orgIds);
+
+      if (error) throw error;
+      
+      // Create a map for easy lookup
+      return new Map(data.map(org => [org.id, org]));
+    },
+    enabled: orgIds.length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Hook to fetch all departments with member counts and manager info
+ * Now accepts optional organizationId parameter
+ */
+export const useDepartments = (organizationId?: string | null, options?: { enabled?: boolean }) => {
+  const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
   const { toast } = useToast();
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [targetOrgId, setTargetOrgId] = useState<string | null>(null);
   const [isLoadingOrg, setIsLoadingOrg] = useState(true);
 
-  // First, get the user's organization from team_members
+  // Determine which organization to use
   useEffect(() => {
-    const fetchOrganization = async () => {
+    const determineOrganization = async () => {
       if (!user?.id) {
         setIsLoadingOrg(false);
         return;
       }
 
-      try {
-        const { data, error } = await supabase
-          .from('team_members')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('❌ useDepartments - Error fetching organization:', error);
-          setOrganizationId(null);
-        } else if (data) {
-          setOrganizationId(data.organization_id);
-        } else {
-          console.log('ℹ️ useDepartments - No team member found for user:', user.id);
-          setOrganizationId(null);
-        }
-      } catch (err) {
-        console.error('❌ useDepartments - Unexpected error:', err);
-        setOrganizationId(null);
-      } finally {
+      // If organizationId is provided directly, use it
+      if (organizationId) {
+        setTargetOrgId(organizationId);
         setIsLoadingOrg(false);
+        return;
       }
+
+      // Otherwise, get from organizations list
+      if (organizations && organizations.length > 0) {
+        // For now, use the first one. In the UI, you can let user switch
+        setTargetOrgId(organizations[0].organization_id);
+      } else {
+        setTargetOrgId(null);
+      }
+      setIsLoadingOrg(false);
     };
 
-    fetchOrganization();
-  }, [user?.id]);
+    determineOrganization();
+  }, [user?.id, organizationId, organizations]);
 
   return useQuery({
-    queryKey: ['departments', organizationId],
+    queryKey: ['departments', targetOrgId],
     queryFn: async () => {
-      if (!organizationId) {
-        return []; // Return empty array if no organization
+      if (!targetOrgId) {
+        return [];
       }
 
       const { data, error } = await supabase
         .rpc('get_departments_with_stats', {
-          p_organization_id: organizationId
+          p_organization_id: targetOrgId
         });
 
       if (error) {
+        console.error('❌ useDepartments - RPC error:', error);
         toast({
           title: 'Error',
           description: 'Failed to fetch departments',
           variant: 'destructive',
         });
-        return []; // Return empty array instead of throwing
+        return [];
       }
 
       return data as DepartmentWithStats[];
     },
-    enabled: (options?.enabled ?? true) && !isLoadingOrg && !!user && !!organizationId,
+    enabled: (options?.enabled ?? true) && !isLoadingOrg && !!user && !!targetOrgId,
   });
 };
+
 /**
  * Hook to fetch single department with members and manager
  */
@@ -225,166 +282,145 @@ export const useDepartmentDetails = (departmentId: string | null) => {
 
 /**
  * Hook to fetch department analytics
+ * Now accepts optional organizationId parameter
  */
-export const useDepartmentAnalytics = (options?: { enabled?: boolean }) => {
+export const useDepartmentAnalytics = (organizationId?: string | null, options?: { enabled?: boolean }) => {
   const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
   const { toast } = useToast();
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [targetOrgId, setTargetOrgId] = useState<string | null>(null);
   const [isLoadingOrg, setIsLoadingOrg] = useState(true);
 
-  // First, get the user's organization from team_members
+  // Determine which organization to use
   useEffect(() => {
-    const fetchOrganization = async () => {
+    const determineOrganization = async () => {
       if (!user?.id) {
         setIsLoadingOrg(false);
         return;
       }
 
-      try {
-        console.log('🔍 useDepartmentAnalytics - Fetching organization for user:', user.id);
-        
-        const { data, error } = await supabase
-          .from('team_members')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .maybeSingle(); // Use maybeSingle instead of single to avoid 406 error
-
-        if (error) {
-          console.error('❌ useDepartmentAnalytics - Error fetching organization:', error);
-          setOrganizationId(null);
-        } else if (data) {
-          console.log('✅ useDepartmentAnalytics - Organization found:', data.organization_id);
-          setOrganizationId(data.organization_id);
-        } else {
-          // No team member found - this is expected for new users
-          console.log('ℹ️ useDepartmentAnalytics - No team member found for user:', user.id);
-          setOrganizationId(null);
-        }
-      } catch (err) {
-        console.error('❌ useDepartmentAnalytics - Unexpected error:', err);
-        setOrganizationId(null);
-      } finally {
+      // If organizationId is provided directly, use it
+      if (organizationId) {
+        setTargetOrgId(organizationId);
         setIsLoadingOrg(false);
+        return;
       }
+
+      // Otherwise, get from organizations list
+      if (organizations && organizations.length > 0) {
+        setTargetOrgId(organizations[0].organization_id);
+      } else {
+        setTargetOrgId(null);
+      }
+      setIsLoadingOrg(false);
     };
 
-    fetchOrganization();
-  }, [user?.id]);
+    determineOrganization();
+  }, [user?.id, organizationId, organizations]);
 
-  // Only fetch department analytics if we have an organizationId and the hook is enabled
   return useQuery({
-    queryKey: ['department-analytics', organizationId],
+    queryKey: ['department-analytics', targetOrgId],
     queryFn: async () => {
-      console.log('🔍 useDepartmentAnalytics - Starting fetch for organization:', organizationId);
+      console.log('🔍 useDepartmentAnalytics - Starting fetch for organization:', targetOrgId);
       
-      if (!organizationId) {
+      if (!targetOrgId) {
         console.log('ℹ️ useDepartmentAnalytics - No organization ID, returning empty array');
         return [];
       }
 
       try {
-        // Call the RPC function
-        console.log('📊 useDepartmentAnalytics - Calling get_department_analytics RPC with org_id:', organizationId);
-        const startTime = performance.now();
-        
         const { data, error } = await supabase
           .rpc('get_department_analytics', {
-            p_organization_id: organizationId
+            p_organization_id: targetOrgId
           });
-
-        const endTime = performance.now();
-        console.log(`⏱️ useDepartmentAnalytics - RPC call took ${(endTime - startTime).toFixed(2)}ms`);
 
         if (error) {
-          console.error('❌ useDepartmentAnalytics - RPC error:', {
-            error,
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          
+          console.error('❌ useDepartmentAnalytics - RPC error:', error);
           toast({
             title: 'Error',
             description: 'Failed to fetch department analytics',
             variant: 'destructive',
           });
-          
-          // Return empty array instead of throwing
           return [];
         }
 
-        // Log raw data from database
-        console.log('📦 useDepartmentAnalytics - Raw data from database:', {
-          hasData: !!data,
-          dataLength: data?.length || 0,
-        });
-
-        if (!data || data.length === 0) {
-          console.log('ℹ️ useDepartmentAnalytics - No analytics data returned');
-          return [];
-        }
-
-        // Transform the data
-        console.log('🔄 useDepartmentAnalytics - Transforming data...');
-        const transformedData = (data || []).map((stat: any, index: number) => {
-          const transformed = {
-            department_id: stat.department_id || '',
-            department_name: stat.department_name || 'Unnamed Department',
-            department_color: stat.department_color || '#1E3A8A',
-            total_members: Number(stat.total_members) || 0,
-            active_members: Number(stat.active_members) || 0,
-            total_events: Number(stat.total_events) || 0,
-            team_events: Number(stat.team_events) || 0,
-            personal_events: Number(stat.personal_events) || 0,
-            total_bookings: Number(stat.total_bookings) || 0,
-            team_bookings: Number(stat.team_bookings) || 0,
-            personal_bookings: Number(stat.personal_bookings) || 0,
-            completion_rate: Number(stat.completion_rate) || 0
-          };
-
-          // Log transformation result for first few records
-          if (index < 3) {
-            console.log(`✅ useDepartmentAnalytics - Transformed record ${index + 1}:`, transformed);
-          }
-
-          return transformed;
-        });
-
-        console.log('📊 useDepartmentAnalytics - Transformation complete:', {
-          originalCount: data?.length || 0,
-          transformedCount: transformedData.length,
-        });
-
-        return transformedData as DepartmentAnalytics[];
+        return (data || []).map((stat: any) => ({
+          department_id: stat.department_id || '',
+          department_name: stat.department_name || 'Unnamed Department',
+          department_color: stat.department_color || '#1E3A8A',
+          total_members: Number(stat.total_members) || 0,
+          active_members: Number(stat.active_members) || 0,
+          total_events: Number(stat.total_events) || 0,
+          team_events: Number(stat.team_events) || 0,
+          personal_events: Number(stat.personal_events) || 0,
+          total_bookings: Number(stat.total_bookings) || 0,
+          team_bookings: Number(stat.team_bookings) || 0,
+          personal_bookings: Number(stat.personal_bookings) || 0,
+          completion_rate: Number(stat.completion_rate) || 0
+        })) as DepartmentAnalytics[];
         
       } catch (error) {
-        console.error('❌ useDepartmentAnalytics - Unexpected error:', {
-          error,
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        });
-        
+        console.error('❌ useDepartmentAnalytics - Unexpected error:', error);
         toast({
           title: 'Error',
           description: 'An unexpected error occurred',
           variant: 'destructive',
         });
-        
-        // Return empty array instead of throwing
         return [];
       }
     },
-    enabled: (options?.enabled ?? true) && !isLoadingOrg && !!user && !!organizationId,
+    enabled: (options?.enabled ?? true) && !isLoadingOrg && !!user && !!targetOrgId,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };
+
+/**
+ * Hook to get the current user's team member record for a specific organization
+ */
+export const useTeamMember = (organizationId?: string | null) => {
+  const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
+
+  return useQuery({
+    queryKey: ['team-member', user?.id, organizationId],
+    queryFn: async () => {
+      if (!user) return null;
+
+      let targetOrgId = organizationId;
+      
+      // If no organizationId provided, use the first one
+      if (!targetOrgId && organizations && organizations.length > 0) {
+        targetOrgId = organizations[0].organization_id;
+      }
+
+      if (!targetOrgId) return null;
+
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('organization_id', targetOrgId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ useTeamMember - Error:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!user && (!!organizationId || (organizations && organizations.length > 0)),
+  });
+};
+
 /**
  * Hook to check if department name is available
+ * Updated to use organization from context
  */
 export const useCheckDepartmentName = () => {
   const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
 
   return useMutation({
     mutationFn: async ({ 
@@ -395,18 +431,14 @@ export const useCheckDepartmentName = () => {
       excludeId?: string 
     }) => {
       if (!user) throw new Error('Not authenticated');
+      if (!organizations || organizations.length === 0) throw new Error('No organization found');
 
-      const { data: teamMember } = await supabase
-        .from('team_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!teamMember) throw new Error('Not a team member');
+      // Use the first organization for now
+      const orgId = organizations[0].organization_id;
 
       const { data, error } = await supabase
         .rpc('is_department_name_available', {
-          p_organization_id: teamMember.organization_id,
+          p_organization_id: orgId,
           p_name: name,
           p_exclude_id: excludeId || null
         });
@@ -419,9 +451,11 @@ export const useCheckDepartmentName = () => {
 
 /**
  * Hook to create a new department
+ * Updated to use organization from context
  */
 export const useCreateDepartment = () => {
   const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -433,21 +467,16 @@ export const useCreateDepartment = () => {
       manager_id?: string;
     }) => {
       if (!user) throw new Error('Not authenticated');
+      if (!organizations || organizations.length === 0) throw new Error('No organization found');
 
-      // Get organization
-      const { data: teamMember, error: teamError } = await supabase
-        .from('team_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (teamError || !teamMember) throw new Error('Not a team member');
+      // Use the first organization for now
+      const orgId = organizations[0].organization_id;
 
       // Insert department
       const { data: department, error } = await supabase
         .from('departments')
         .insert({
-          organization_id: teamMember.organization_id,
+          organization_id: orgId,
           name: data.name.trim(),
           description: data.description?.trim() || null,
           color: data.color || '#1E3A8A',
@@ -460,7 +489,7 @@ export const useCreateDepartment = () => {
 
       // Log activity
       await supabase.from('team_activity').insert({
-        organization_id: teamMember.organization_id,
+        organization_id: orgId,
         user_id: user.id,
         user_name: user.user_metadata?.full_name || user.email,
         type: 'department',
@@ -631,22 +660,19 @@ export const useUpdateDepartmentMembers = () => {
 
 /**
  * Hook to get available members with batch email fetching
+ * Updated to use organization from context
  */
 export const useAvailableMembers = (departmentName?: string | null) => {
   const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
 
   return useQuery({
     queryKey: ['available-members', departmentName],
     queryFn: async () => {
       if (!user) throw new Error('Not authenticated');
+      if (!organizations || organizations.length === 0) throw new Error('Not a team member');
 
-      const { data: teamMember, error: teamError } = await supabase
-        .from('team_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (teamError || !teamMember) throw new Error('Not a team member');
+      const orgId = organizations[0].organization_id;
 
       // Build base query
       let query = supabase
@@ -660,7 +686,7 @@ export const useAvailableMembers = (departmentName?: string | null) => {
           department,
           joined_at
         `)
-        .eq('organization_id', teamMember.organization_id)
+        .eq('organization_id', orgId)
         .eq('status', 'active');
 
       if (departmentName) {
@@ -692,15 +718,15 @@ export const useAvailableMembers = (departmentName?: string | null) => {
         profiles = profileData || [];
       }
 
-      // Get emails in batch using the new function
+      // Get emails in batch
       let emailMap = new Map<string, string>();
       if (userIds.length > 0) {
-        const { data: emails, error: emailError } = await supabase
+        const { data: emails } = await supabase
           .rpc('get_user_emails_batch', {
             user_ids: userIds
           });
         
-        if (!emailError && emails) {
+        if (emails) {
           emailMap = new Map(emails.map((e: any) => [e.user_id, e.email]));
         }
       }
@@ -722,28 +748,25 @@ export const useAvailableMembers = (departmentName?: string | null) => {
         joined_at: member.joined_at,
       }));
     },
-    enabled: !!user,
+    enabled: !!user && !!organizations && organizations.length > 0,
   });
 };
 
 /**
  * Hook to get all members with batch email fetching
+ * Updated to use organization from context
  */
 export const useAllMembers = () => {
   const { user } = useAuth();
+  const { data: organizations } = useUserOrganizations();
 
   return useQuery({
     queryKey: ['all-members'],
     queryFn: async () => {
       if (!user) throw new Error('Not authenticated');
+      if (!organizations || organizations.length === 0) throw new Error('Not a team member');
 
-      const { data: teamMember, error: teamError } = await supabase
-        .from('team_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (teamError || !teamMember) throw new Error('Not a team member');
+      const orgId = organizations[0].organization_id;
 
       // Get members
       const { data: members, error } = await supabase
@@ -757,7 +780,7 @@ export const useAllMembers = () => {
           department,
           joined_at
         `)
-        .eq('organization_id', teamMember.organization_id)
+        .eq('organization_id', orgId)
         .eq('status', 'active')
         .order('joined_at', { ascending: false });
 
@@ -782,15 +805,15 @@ export const useAllMembers = () => {
         profiles = profileData || [];
       }
 
-      // Get emails in batch using the new function
+      // Get emails in batch
       let emailMap = new Map<string, string>();
       if (userIds.length > 0) {
-        const { data: emails, error: emailError } = await supabase
+        const { data: emails } = await supabase
           .rpc('get_user_emails_batch', {
             user_ids: userIds
           });
         
-        if (!emailError && emails) {
+        if (emails) {
           emailMap = new Map(emails.map((e: any) => [e.user_id, e.email]));
         }
       }
@@ -812,6 +835,6 @@ export const useAllMembers = () => {
         joined_at: member.joined_at,
       }));
     },
-    enabled: !!user,
+    enabled: !!user && !!organizations && organizations.length > 0,
   });
 };

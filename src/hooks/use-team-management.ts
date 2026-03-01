@@ -144,7 +144,7 @@ const getUserEmailsBatch = async (userIds: string[]): Promise<Map<string, string
 // HOOKS
 // ============================================
 
-// Get current user's organization and permissions
+// Get current user's organization and permissions - FIXED
 export const useCurrentUserPermissions = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -155,54 +155,58 @@ export const useCurrentUserPermissions = () => {
       if (!user) throw new Error('No user logged in');
 
       try {
-        const { data: memberData, error: memberError } = await supabase
+        // Get ALL team memberships for this user - NOT using .single() or .maybeSingle()
+        const { data: memberships, error: memberError } = await supabase
           .from('team_members')
           .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .eq('user_id', user.id);
 
         if (memberError) {
-          console.error('Error fetching member:', memberError);
+          console.error('Error fetching memberships:', memberError);
         }
 
-        if (!memberData) {
-          const { data: orgData } = await supabase
-            .from('organizations')
-            .select('id')
-            .eq('owner_id', user.id)
-            .maybeSingle();
-
-          if (orgData) {
-            return {
-              isAdmin: true,
-              canManage: true,
-              canInvite: true,
-              canDelete: true,
-              canEdit: true,
-              role: 'admin'
-            };
-          }
+        // If user has memberships, determine their highest role
+        if (memberships && memberships.length > 0) {
+          const roles = memberships.map(m => m.role);
+          const isAdmin = roles.includes('admin');
+          const isManager = roles.includes('manager') || isAdmin;
 
           return {
-            isAdmin: false,
-            canManage: false,
-            canInvite: false,
-            canDelete: false,
-            canEdit: false,
-            role: null
+            isAdmin,
+            canManage: isAdmin || isManager,
+            canInvite: isAdmin || isManager,
+            canDelete: isAdmin,
+            canEdit: isAdmin || isManager,
+            role: isAdmin ? 'admin' : isManager ? 'manager' : 'member'
           };
         }
 
-        const isAdmin = memberData.role === 'admin';
-        const isManager = memberData.role === 'manager';
+        // If no team memberships, check if user is organization owner
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('owner_id', user.id)
+          .maybeSingle();
 
+        if (orgData) {
+          return {
+            isAdmin: true,
+            canManage: true,
+            canInvite: true,
+            canDelete: true,
+            canEdit: true,
+            role: 'admin'
+          };
+        }
+
+        // Default permissions for users with no org access
         return {
-          isAdmin,
-          canManage: isAdmin || isManager,
-          canInvite: isAdmin || isManager,
-          canDelete: isAdmin,
-          canEdit: isAdmin || isManager,
-          role: memberData.role
+          isAdmin: false,
+          canManage: false,
+          canInvite: false,
+          canDelete: false,
+          canEdit: false,
+          role: null
         };
       } catch (error) {
         console.error('Error in permissions:', error);
@@ -227,7 +231,63 @@ export const useCurrentUserPermissions = () => {
   });
 };
 
-// Get user's organization
+// Get all organizations the user belongs to
+export const useOrganizations = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useQuery({
+    queryKey: ['organizations', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      try {
+        // Get all team memberships
+        const { data: memberships, error: membersError } = await supabase
+          .from('team_members')
+          .select('organization_id, role, department')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        if (membersError) {
+          console.error('Error fetching memberships:', membersError);
+          return [];
+        }
+
+        if (!memberships || memberships.length === 0) return [];
+
+        // Get all organizations
+        const orgIds = memberships.map(m => m.organization_id);
+        const { data: orgs, error: orgsError } = await supabase
+          .from('organizations')
+          .select('*')
+          .in('id', orgIds);
+
+        if (orgsError) {
+          console.error('Error fetching organizations:', orgsError);
+          return [];
+        }
+
+        // Combine with membership info
+        return orgs.map(org => ({
+          ...org,
+          membership: memberships.find(m => m.organization_id === org.id)
+        }));
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load organizations',
+          variant: 'destructive',
+        });
+        return [];
+      }
+    },
+    enabled: !!user,
+  });
+};
+
+// Get user's organization (returns the first organization or null)
 export const useOrganization = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -238,6 +298,7 @@ export const useOrganization = () => {
       if (!user) throw new Error('No user logged in');
 
       try {
+        // First check if user owns an organization
         const { data: ownedOrg, error: ownedError } = await supabase
           .from('organizations')
           .select('*')
@@ -247,26 +308,32 @@ export const useOrganization = () => {
         if (ownedError) console.error('Error fetching owned org:', ownedError);
         if (ownedOrg) return ownedOrg;
 
-        const { data: memberData, error: memberError } = await supabase
+        // Get all team memberships
+        const { data: memberships, error: membersError } = await supabase
           .from('team_members')
           .select('organization_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .eq('user_id', user.id);
 
-        if (memberError) console.error('Error fetching team member:', memberError);
-
-        if (memberData?.organization_id) {
-          const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('*')
-            .eq('id', memberData.organization_id)
-            .single();
-
-          if (orgError) console.error('Error fetching org:', orgError);
-          return org;
+        if (membersError) {
+          console.error('Error fetching team members:', membersError);
+          return null;
         }
 
-        return null;
+        if (!memberships || memberships.length === 0) return null;
+
+        // For backward compatibility, return the first organization
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', memberships[0].organization_id)
+          .maybeSingle();
+
+        if (orgError) {
+          console.error('Error fetching org:', orgError);
+          return null;
+        }
+
+        return org;
       } catch (error) {
         console.error('Error fetching organization:', error);
         toast({
@@ -622,8 +689,8 @@ export const useCancelInvite = () => {
     }
   });
 };
-// hooks/use-team-management.ts
 
+// Validate invite
 export const useValidateInvite = (token: string | null, userInfo?: { user_id: string; user_email: string } | null) => {
   return useQuery({
     queryKey: ['validateInvite', token, userInfo?.user_id],
@@ -667,6 +734,7 @@ export const useValidateInvite = (token: string | null, userInfo?: { user_id: st
   });
 };
 
+// Accept invite
 export const useAcceptInvite = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -717,6 +785,7 @@ export const useAcceptInvite = () => {
     },
   });
 };
+
 // Update team member
 export const useUpdateTeamMember = () => {
   const queryClient = useQueryClient();
