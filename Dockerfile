@@ -22,27 +22,20 @@ ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
 ENV VITE_GEMINI_MODEL=$VITE_GEMINI_MODEL
 ENV VITE_GEMINI_BASE_URL=$VITE_GEMINI_BASE_URL
 
-# Set NODE_ENV to production but we still need dev dependencies for build
+# Set NODE_ENV to production
 ENV NODE_ENV=production
 
 # Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install ALL dependencies (including dev dependencies like Vite)
-RUN npm ci
+# Install ALL dependencies
+RUN npm install
 
-# Verify Vite is installed (for debugging - remove in production)
-RUN npx vite --version || echo "Vite not found in npx, checking node_modules..."
-RUN ls -la node_modules/.bin/ || echo "No .bin directory found"
-
-# Copy source code
+# Copy the rest of the application
 COPY . .
 
-# Build the app - using npx to ensure Vite is found
-RUN npx vite build || npm run build
-
-# Check build output (for debugging)
-RUN ls -la dist/ || echo "Dist folder not created"
+# CRITICAL FIX: Use the local vite binary directly
+RUN ./node_modules/.bin/vite build
 
 # ---------------------------
 # 2. Run stage (Nginx serve)
@@ -55,7 +48,7 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy built frontend
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Create custom nginx config with logging disabled
+# Create nginx config with logging disabled
 RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
 server {
     listen 80;
