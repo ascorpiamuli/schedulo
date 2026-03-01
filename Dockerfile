@@ -22,22 +22,20 @@ ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
 ENV VITE_GEMINI_MODEL=$VITE_GEMINI_MODEL
 ENV VITE_GEMINI_BASE_URL=$VITE_GEMINI_BASE_URL
 
-# Set NODE_ENV to production to disable development logs
+# Set NODE_ENV to production but we still need dev dependencies for build
 ENV NODE_ENV=production
 
-# Optional: Verify args are received (for debugging, remove in production)
-# Uncomment these lines only when debugging build issues
-# RUN echo "Building with VITE_SITE_URL: ${VITE_SITE_URL}" && \
-#     echo "VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}" && \
-#     echo "Project ID: ${VITE_SUPABASE_PROJECT_ID}"
-
+# Copy package files
 COPY package*.json ./
-RUN npm ci --omit=dev
 
+# Install ALL dependencies (including dev dependencies) for build
+RUN npm install
+
+# Copy source code
 COPY . .
 
-# Disable verbose build output
-RUN npm run build --silent
+# Build the app
+RUN npm run build
 
 # ---------------------------
 # 2. Run stage (Nginx serve)
