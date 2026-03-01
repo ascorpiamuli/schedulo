@@ -778,7 +778,7 @@ export default function Dashboard() {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
-    if (hour < 1) return 'Good evening';
+    if (hour < 22) return 'Good evening';
     return 'Good Night';
   };  
 
