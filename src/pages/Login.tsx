@@ -19,7 +19,8 @@ import {
   Star,
   Zap,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Home
 } from "lucide-react";
 
 export default function Login() {
@@ -62,7 +63,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side — SBPMeet branding - Smarter design */}
+      {/* Left side — SBPMeet branding */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-gradient-to-br from-[#1E3A8A] via-[#1E3A8A]/95 to-[#C2410C]/80 p-8 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
@@ -83,7 +84,7 @@ export default function Login() {
           transition={{ duration: 0.6 }}
           className="max-w-md text-white relative z-10 bg-white/10 backdrop-blur-sm rounded-3xl p-10 border border-white/20 shadow-2xl"
         >
-          {/* Logo with animation - IDENTICAL to signup page */}
+          {/* Logo with animation */}
           <motion.div 
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
@@ -113,7 +114,7 @@ export default function Login() {
             and fill your calendar automatically.
           </p>
 
-          {/* Stats bar - similar to signup but different metrics */}
+          {/* Stats bar */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
               <Users className="h-5 w-5 mx-auto mb-1 text-[#C2410C]" />
@@ -191,9 +192,20 @@ export default function Login() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="w-full max-w-md"
         >
+          {/* Back to Home link - visible on all screen sizes */}
+          <div className="mb-4">
+            <Link 
+              to="/" 
+              className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#C2410C] dark:hover:text-[#C2410C] transition-colors group"
+            >
+              <Home className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+
           <Card className="border-0 shadow-2xl bg-white dark:bg-gray-900">
             <CardHeader className="space-y-1">
-              {/* Mobile logo - IDENTICAL to signup page */}
+              {/* Mobile logo */}
               <div className="flex items-center gap-2 mb-2 lg:hidden">
                 <div className="relative">
                   <div className="bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] p-2 rounded-xl">
@@ -329,7 +341,6 @@ export default function Login() {
                     title="Coming soon"
                   >
                     <svg className="h-5 w-5 mr-2" viewBox="0 0 23 23">
-                      <path fill="#f3f3f3" d="M0 0h23v23H0z" />
                       <path fill="#f35325" d="M1 1h10v10H1z" />
                       <path fill="#81bc06" d="M12 1h10v10H12z" />
                       <path fill="#05a6f0" d="M1 12h10v10H1z" />
