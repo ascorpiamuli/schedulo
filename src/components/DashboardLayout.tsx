@@ -133,7 +133,7 @@ const navigation = [
   {
     title: "ORGANIZATION",
     items: [
-      { name: "Settings", href: "/dashboard/organization", icon: Settings },
+      { name: "Settings", href: "/dashboard/settings", icon: Settings },
       { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
       { name: "Integrations", href: "/dashboard/integrations", icon: Link2 },
       { name: "Security", href: "/dashboard/security", icon: Shield },
@@ -142,8 +142,8 @@ const navigation = [
   {
     title: "SUPPORT",
     items: [
-      { name: "Help Center", href: "/help", icon: HelpCircle },
-      { name: "Documentation", href: "/docs", icon: BookOpen },
+      { name: "Help Center", href: "/", icon: HelpCircle },
+      { name: "Documentation", href: "/", icon: BookOpen },
     ]
   }
 ];

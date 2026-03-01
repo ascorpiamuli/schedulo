@@ -22,6 +22,7 @@ import OrganizationSettings from "./pages/OrganizationSettings";
 import Departments from "./pages/Departments";
 import TeamAnalytics from "./pages/TeamAnalytics";
 import TeamBookings from "./pages/TeamBookings";
+import TeamCalendar from "./pages/TeamCalendar";
 import TeamAvailability from "./pages/TeamAvailability";
 import TeamEvents from "./pages/TeamEvents";
 import Invitations from "./pages/Invitations";
@@ -154,6 +155,11 @@ const App = () => {
               <Route path="/dashboard/team" element={
                 <ProtectedRoute>
                   <Teams />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/team/calendar" element={
+                <ProtectedRoute>
+                  <TeamCalendar />
                 </ProtectedRoute>
               } />
               
