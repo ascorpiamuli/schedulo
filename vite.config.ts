@@ -12,7 +12,10 @@ export default defineConfig(({ mode }) => {
   const siteUrl = process.env.VITE_SITE_URL || 
                   (isProd ? "https://schedule.pasbestventures.com" : "https://schedulo.internal");
   
-  console.log(`🚀 Building for ${mode} mode with URL: ${siteUrl}`);
+  // Only log in development, not in production
+  if (!isProd) {
+    console.log(`🚀 Building for ${mode} mode with URL: ${siteUrl}`);
+  }
 
   return {
     server: {
@@ -23,7 +26,10 @@ export default defineConfig(({ mode }) => {
         overlay: false,
       },
     },
-    plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+    plugins: [
+      react(), 
+      mode === "development" && componentTagger()
+    ].filter(Boolean),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -34,6 +40,24 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_SITE_URL': JSON.stringify(siteUrl),
       'import.meta.env.VITE_IS_PRODUCTION': JSON.stringify(isProd),
     },
-    
+    // Remove console logs in production
+    esbuild: {
+      pure: isProd ? ["console.log", "console.info", "console.debug", "console.warn"] : [],
+      drop: isProd ? ["console"] : [],
+    },
+    // Build options for production
+    build: {
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: isProd,
+          drop_debugger: isProd,
+          pure_funcs: isProd ? ['console.log', 'console.info', 'console.debug', 'console.warn'] : [],
+        },
+      },
+      // Reduce build output verbosity
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 1000,
+    },
   };
 });
