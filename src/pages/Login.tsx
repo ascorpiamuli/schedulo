@@ -31,35 +31,62 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password 
+    });
     
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-      
-      if (error) {
-        toast({ 
-          title: "Login failed", 
-          description: error.message, 
-          variant: "destructive" 
-        });
-      } else {
-        navigate("/dashboard");
-      }
-    } catch (error) {
+    if (error) {
       toast({ 
         title: "Login failed", 
-        description: "An unexpected error occurred. Please try again.", 
+        description: error.message, 
         variant: "destructive" 
       });
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    // Check if user is deleted
+    if (data.user) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('deleted_at')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error checking profile:', profileError);
+      }
+
+      if (profile?.deleted_at) {
+        // User is deleted, sign them out
+        await supabase.auth.signOut();
+        toast({
+          title: "Account deleted",
+          description: "This account has been deleted. Please create a new account.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // All good - redirect to dashboard
+    navigate("/dashboard");
+  } catch (error) {
+    console.error('Login error:', error);
+    toast({ 
+      title: "Login failed", 
+      description: "An unexpected error occurred. Please try again.", 
+      variant: "destructive" 
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex min-h-screen">

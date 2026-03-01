@@ -210,7 +210,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  // Add this state for profile
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   // Fetch notifications
   const fetchNotifications = async () => {
     if (!user) return;
@@ -374,6 +375,33 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [user]);
+
+
+    // Fetch profile data
+    useEffect(() => {
+      const fetchProfile = async () => {
+        if (!user) return;
+        
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (error) {
+            console.error('Error fetching profile:', error);
+            return;
+          }
+
+          setProfile(data);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      };
+
+      fetchProfile();
+    }, [user]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -595,46 +623,131 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
 
-            {/* Profile */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 px-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-orange-600 text-white">
-                      {user?.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="hidden lg:block text-left">
-                    <p className="text-sm font-medium">{user?.email?.split('@')[0]}</p>
-                    <p className="text-xs text-gray-500">
-                      {permissions?.isAdmin ? 'Administrator' : 'Team Member'}
-                    </p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-gray-500 hidden lg:block" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard/settings" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard/billing" className="cursor-pointer">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Billing</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+{/* Profile */}
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button 
+      variant="ghost" 
+      className="flex items-center gap-2 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+    >
+      <Avatar className="h-8 w-8 ring-2 ring-transparent hover:ring-blue-500/50 transition-all duration-200">
+        {profile?.avatar_url ? (
+          <AvatarImage src={profile.avatar_url} alt={profile?.full_name || user?.email || ''} />
+        ) : (
+          <AvatarFallback className="bg-gradient-to-br from-blue-600 to-orange-600 text-white font-semibold">
+            {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      <div className="hidden lg:block text-left">
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {profile?.full_name || user?.email?.split('@')[0] || 'User'}
+        </p>
+        <div className="flex items-center gap-1.5">
+          <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+            {permissions?.isAdmin ? 'Administrator' : 
+             permissions?.canManage ? 'Manager' : 
+             permissions?.role === 'member' ? 'Team Member' : 
+             permissions?.role === 'guest' ? 'Guest' : 'Member'}
+          </p>
+        </div>
+      </div>
+      <ChevronDown className="h-4 w-4 text-gray-400 hidden lg:block transition-transform duration-200 group-data-[state=open]:rotate-180" />
+    </Button>
+  </DropdownMenuTrigger>
+  
+  <DropdownMenuContent 
+    align="end" 
+    className="w-64 p-1 border-gray-200 dark:border-gray-800 shadow-xl"
+  >
+    {/* Header with user info */}
+    <div className="px-2 py-3 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-10 w-10 ring-2 ring-blue-500/20">
+          {profile?.avatar_url ? (
+            <AvatarImage src={profile.avatar_url} alt={profile?.full_name || user?.email || ''} />
+          ) : (
+            <AvatarFallback className="bg-gradient-to-br from-blue-600 to-orange-600 text-white font-semibold">
+              {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          )}
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {profile?.full_name || 'User'}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {user?.email}
+          </p>
+        </div>
+        <Badge 
+          variant="outline" 
+          className={cn(
+            "text-[10px] px-1.5 py-0 h-5 font-medium",
+            permissions?.isAdmin ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400" :
+            permissions?.canManage ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400" :
+            "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400"
+          )}
+        >
+          {permissions?.isAdmin ? 'Admin' : permissions?.canManage ? 'Manager' : 'Member'}
+        </Badge>
+      </div>
+    </div>
+
+    {/* Quick actions */}
+    <div className="py-1">
+      <DropdownMenuItem asChild className="cursor-pointer rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/50 group">
+        <Link to="/dashboard/settings" className="flex items-center px-2 py-2">
+          <div className="w-7 h-7 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-2 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+            <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Profile</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Manage your account</p>
+          </div>
+        </Link>
+      </DropdownMenuItem>
+
+      <DropdownMenuItem asChild className="cursor-pointer rounded-md hover:bg-green-50 dark:hover:bg-green-950/50 group">
+        <Link to="/dashboard/billing" className="flex items-center px-2 py-2">
+          <div className="w-7 h-7 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-2 group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
+            <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Billing</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Manage subscription</p>
+          </div>
+        </Link>
+      </DropdownMenuItem>
+    </div>
+
+    <DropdownMenuSeparator className="my-1 bg-gray-200 dark:bg-gray-800" />
+
+    {/* Sign out */}
+    <DropdownMenuItem 
+      onClick={signOut} 
+      className="cursor-pointer rounded-md hover:bg-red-50 dark:hover:bg-red-950/50 group"
+    >
+      <div className="flex items-center px-2 py-2 w-full">
+        <div className="w-7 h-7 rounded-md bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-2 group-hover:bg-red-200 dark:group-hover:bg-red-800/50 transition-colors">
+          <LogOut className="h-4 w-4 text-red-600 dark:text-red-400" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Sign out</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">End your session</p>
+        </div>
+      </div>
+    </DropdownMenuItem>
+
+    {/* Footer */}
+    <div className="px-2 py-2 mt-1 border-t border-gray-100 dark:border-gray-800">
+      <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
+        Signed in as {user?.email?.split('@')[0]}
+      </p>
+    </div>
+  </DropdownMenuContent>
+</DropdownMenu>
           </div>
         </header>
 

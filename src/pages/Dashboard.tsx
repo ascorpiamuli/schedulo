@@ -773,6 +773,14 @@ export default function Dashboard() {
     if (isTomorrow(date)) return "Tomorrow";
     return format(date, "EEE, MMM d");
   };
+  // Helper function for time-based greetings
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    if (hour < 1) return 'Good evening';
+    return 'Good Night';
+  };  
 
   // Sample activity data - replace with real data
   const recentActivity = [
@@ -831,48 +839,48 @@ export default function Dashboard() {
         animate="visible"
         className="w-full space-y-6 sm:space-y-8 lg:space-y-10 p-3 sm:p-4 lg:p-6 pb-20 md:pb-6"
       >
-        {/* Welcome Header - Mobile Optimized */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-          <div className="w-full sm:w-auto">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-['Space_Grotesk'] tracking-tight">
-              Welcome back,
-              <span className="block text-2xl sm:text-3xl lg:text-4xl bg-gradient-to-r from-blue-600 via-blue-600/80 to-orange-600/60 bg-clip-text text-transparent">
-                {user?.user_metadata?.full_name?.split(' ')[0] || "there"}
-              </span>
-            </h1>
-            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground max-w-2xl">
-              {stats.thisWeekCount > 0 
-                ? `You have ${stats.thisWeekCount} session${stats.thisWeekCount > 1 ? 's' : ''} scheduled this week.`
-                : "Your calendar is open for business. Share your booking link to get started."}
-            </p>
-          </div>
+{/* Welcome Header - Mobile Optimized */}
+<motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+  <div className="w-full sm:w-auto">
+    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-['Space_Grotesk'] tracking-tight">
+      {getTimeGreeting()},
+      <span className="block text-2xl sm:text-3xl lg:text-4xl bg-gradient-to-r from-blue-600 via-blue-600/80 to-orange-600/60 bg-clip-text text-transparent">
+        {user?.user_metadata?.full_name?.split(' ')[0] || "there"}
+      </span>
+    </h1>
+    <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground max-w-2xl">
+      {stats.thisWeekCount > 0 
+        ? `You have ${stats.thisWeekCount} session${stats.thisWeekCount > 1 ? 's' : ''} scheduled this week.`
+        : "Your calendar is open for business. Share your booking link to get started."}
+    </p>
+  </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size={isMobile ? "default" : "lg"}
-              className="flex-1 sm:flex-initial gap-1 sm:gap-2 bg-white dark:bg-gray-900 text-sm"
-              onClick={copyBookingLink}
-            >
-              {copied ? (
-                <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-              ) : (
-                <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
-              )}
-              <span className="inline">{copied ? 'Copied!' : isMobile ? 'Copy' : 'Copy link'}</span>
-            </Button>
-            <Button 
-              size={isMobile ? "default" : "lg"} 
-              className="flex-1 sm:flex-initial gap-1 sm:gap-2 bg-gradient-to-r from-blue-600 to-orange-600 text-white text-sm" 
-              asChild
-            >
-              <Link to="/dashboard/events">
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="inline">{isMobile ? 'Create' : 'Create event'}</span>
-              </Link>
-            </Button>
-          </div>
-        </motion.div>
+  <div className="flex items-center gap-2 w-full sm:w-auto">
+    <Button
+      variant="outline"
+      size={isMobile ? "default" : "lg"}
+      className="flex-1 sm:flex-initial gap-1 sm:gap-2 bg-white dark:bg-gray-900 text-sm"
+      onClick={copyBookingLink}
+    >
+      {copied ? (
+        <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+      ) : (
+        <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
+      )}
+      <span className="inline">{copied ? 'Copied!' : isMobile ? 'Copy' : 'Copy link'}</span>
+    </Button>
+    <Button 
+      size={isMobile ? "default" : "lg"} 
+      className="flex-1 sm:flex-initial gap-1 sm:gap-2 bg-gradient-to-r from-blue-600 to-orange-600 text-white text-sm" 
+      asChild
+    >
+      <Link to="/dashboard/events">
+        <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+        <span className="inline">{isMobile ? 'Create' : 'Create event'}</span>
+      </Link>
+    </Button>
+  </div>
+</motion.div>
 
         {/* Key Stats Grid - Responsive columns */}
         <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -1092,32 +1100,11 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <Separator className="my-3 sm:my-4" />
-
-                      <div className="space-y-2 sm:space-y-3">
-                        <div className="flex items-center justify-between text-xs sm:text-sm">
-                          <span className="text-muted-foreground">Booking link</span>
-                          <Button variant="ghost" size="sm" className="h-auto p-0 text-blue-600 text-xs" onClick={copyBookingLink}>
-                            {copied ? 'Copied!' : 'Copy'}
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-muted p-1.5 sm:p-2">
-                          <Globe className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
-                          <p className="text-[10px] sm:text-xs truncate">{bookingLink}</p>
-                        </div>
-                      </div>
-
                       <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-1 sm:gap-2">
                         <Button variant="outline" size="sm" className="w-full gap-1 text-xs h-8 sm:h-9" asChild>
                           <Link to="/dashboard/settings">
                             <Settings2 className="h-3 w-3 sm:h-4 sm:w-4" />
                             Settings
-                          </Link>
-                        </Button>
-                        <Button variant="outline" size="sm" className="w-full gap-1 text-xs h-8 sm:h-9" asChild>
-                          <Link to={`/${user?.user_metadata?.username || 'book'}`} target="_blank">
-                            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                            Preview
                           </Link>
                         </Button>
                       </div>
