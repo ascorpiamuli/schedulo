@@ -16,19 +16,19 @@ import {
   Shield,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function UpdatePassword() {
-  // State
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
-  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     uppercase: false,
@@ -36,178 +36,37 @@ export default function UpdatePassword() {
     number: false,
     special: false,
   });
-  const [debugInfo, setDebugInfo] = useState<any>({});
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Log component mount
+  // Check for error in URL on mount
   useEffect(() => {
-    console.log("🔵 [UpdatePassword] Component mounted");
-    console.log("🔹 Full URL:", window.location.href);
-    console.log("🔹 Search params:", window.location.search);
-    console.log("🔹 Hash:", window.location.hash);
-    
-    // Parse URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const params: Record<string, string> = {};
-    urlParams.forEach((value, key) => {
-      params[key] = value;
-      console.log(`🔹 URL param - ${key}:`, value);
-    });
-
-    // Parse hash parameters
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const hashParamsObj: Record<string, string> = {};
-    hashParams.forEach((value, key) => {
-      hashParamsObj[key] = value;
-      console.log(`🔹 Hash param - ${key}:`, value);
-    });
-
-    setDebugInfo({
-      urlParams: params,
-      hashParams: hashParamsObj,
-      fullUrl: window.location.href,
-      hash: window.location.hash
-    });
-  }, []);
-
-  // Check session and determine if we're in recovery mode
-  useEffect(() => {
-    console.log("🔵 [UpdatePassword] Starting session check...");
+    const errorCode = hashParams.get('error_code');
+    const errorDescription = hashParams.get('error_description');
     
-    const checkRecoveryMode = async () => {
-      try {
-        // First, check for errors in the URL hash
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const errorCode = hashParams.get('error_code');
-        
-        if (errorCode === 'otp_expired') {
-          console.log("❌ [UpdatePassword] Expired token detected");
-          setIsRecoveryMode(false);
-          setSessionChecked(true);
-          toast({
-            title: "Link Expired",
-            description: "This password reset link has expired. Please request a new one.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Check for recovery indicators in URL
-        const hasRecoveryInHash = window.location.hash.includes('type=recovery');
-        const hasAccessToken = window.location.hash.includes('access_token');
-        const hasRefreshToken = window.location.hash.includes('refresh_token');
-        
-        console.log("🔹 URL analysis:", {
-          hasRecoveryInHash,
-          hasAccessToken,
-          hasRefreshToken,
-          hash: window.location.hash
-        });
-
-        // Get current session
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error("❌ [UpdatePassword] Session error:", error);
-        }
-
-        console.log("🔹 Session data:", session ? {
-          hasSession: true,
-          email: session.user?.email,
-          aud: session.user?.aud,
-          expiresAt: session.expires_at
-        } : "No session");
-
-        // DETERMINE IF WE'RE IN RECOVERY MODE
-        // Multiple conditions to check:
-        const isRecovery = 
-          hasRecoveryInHash || // URL has type=recovery in hash
-          hasAccessToken || // URL has access_token (fresh from email)
-          (session && window.location.hash.length > 0) || // Has session AND hash (from recovery)
-          session?.user?.aud === 'authenticated' && hasRefreshToken; // Authenticated with refresh token
-
-        if (isRecovery) {
-          console.log("✅ [UpdatePassword] RECOVERY MODE DETECTED");
-          setIsRecoveryMode(true);
-          
-          // CRITICAL: Do NOT redirect to dashboard. Stay on this page.
-        } else if (session) {
-          // User is logged in but not from recovery - redirect to dashboard
-          console.log("⚠️ [UpdatePassword] Regular session detected, redirecting to dashboard");
-          navigate('/dashboard');
-          return;
-        } else {
-          console.log("❌ [UpdatePassword] No recovery session found");
-          setIsRecoveryMode(false);
-        }
-
-        setSessionChecked(true);
-        console.log("✅ [UpdatePassword] Session check complete, recovery mode:", isRecovery);
-
-      } catch (err) {
-        console.error("❌ [UpdatePassword] Unexpected error:", err);
-        setIsRecoveryMode(false);
-        setSessionChecked(true);
-      }
-    };
-
-    checkRecoveryMode();
-
-    // Listen for auth state changes
-    console.log("🔵 [UpdatePassword] Setting up auth state listener...");
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔄 [UpdatePassword] Auth event:", event, session?.user?.email);
-
-      if (event === 'PASSWORD_RECOVERY') {
-        console.log("✅ [UpdatePassword] PASSWORD_RECOVERY event - recovery mode confirmed");
-        setIsRecoveryMode(true);
-        setSessionChecked(true);
-      } else if (event === 'SIGNED_IN' && window.location.hash.includes('type=recovery')) {
-        console.log("✅ [UpdatePassword] SIGNED_IN from recovery link");
-        setIsRecoveryMode(true);
-        setSessionChecked(true);
-      } else if (event === 'SIGNED_IN' && !isRecoveryMode) {
-        // Regular sign-in, not from recovery
-        console.log("🔹 [UpdatePassword] Regular sign-in detected");
-        // Don't redirect immediately - let the checkRecoveryMode handle it
-      }
-    });
-
-    return () => {
-      console.log("🔵 [UpdatePassword] Cleaning up auth listener");
-      subscription.unsubscribe();
-    };
-  }, [navigate, toast]);
+    if (errorCode === 'otp_expired') {
+      setError(errorDescription?.replace(/\+/g, ' ') || 'This password reset link has expired. Please request a new one.');
+    }
+  }, []);
 
   // Check password strength
   useEffect(() => {
-    console.log("🔵 [UpdatePassword] Password changed, checking strength...");
-    const newStrength = {
+    setPasswordStrength({
       length: password.length >= 8,
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
       special: /[^A-Za-z0-9]/.test(password),
-    };
-    
-    console.log("🔹 Password strength:", {
-      length: password.length,
-      ...newStrength,
-      metRequirements: Object.values(newStrength).filter(Boolean).length
     });
-
-    setPasswordStrength(newStrength);
   }, [password]);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🔵 [UpdatePassword] Update password form submitted");
 
     // Validate passwords match
     if (password !== confirmPassword) {
-      console.error("❌ [UpdatePassword] Passwords don't match");
       toast({
         title: "Passwords don't match",
         description: "Please make sure your passwords match",
@@ -221,7 +80,6 @@ export default function UpdatePassword() {
     const metCount = strengthValues.filter(Boolean).length;
     
     if (metCount < 3) {
-      console.error("❌ [UpdatePassword] Password too weak");
       toast({
         title: "Weak password",
         description: "Please choose a stronger password (min 8 chars, mix of letters, numbers & symbols)",
@@ -231,43 +89,32 @@ export default function UpdatePassword() {
     }
 
     setLoading(true);
-    console.log("🔵 [UpdatePassword] Attempting to update password...");
 
     try {
       const { error } = await supabase.auth.updateUser({
         password: password,
       });
 
-      if (error) {
-        console.error("❌ [UpdatePassword] Update failed:", error);
-        toast({
-          title: "Update failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log("✅ [UpdatePassword] Password updated successfully");
-        
-        toast({
-          title: "Password updated",
-          description: "Your password has been successfully updated. Please log in with your new password.",
-        });
+      if (error) throw error;
 
-        // Sign out after successful update
-        await supabase.auth.signOut();
-        console.log("✅ [UpdatePassword] User signed out");
+      setSuccess(true);
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully updated.",
+      });
 
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          console.log("🔵 [UpdatePassword] Redirecting to login");
-          navigate("/login");
-        }, 3000);
-      }
-    } catch (error) {
-      console.error("❌ [UpdatePassword] Unexpected error:", error);
+      // Sign out after successful update
+      await supabase.auth.signOut();
+      
+      // Redirect to login after 3 seconds
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+
+    } catch (error: any) {
       toast({
         title: "Update failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -281,58 +128,41 @@ export default function UpdatePassword() {
     strengthPercentage <= 60 ? "bg-yellow-500" :
     strengthPercentage <= 80 ? "bg-blue-500" : "bg-green-500";
 
-  // Loading state while checking session
-  if (!sessionChecked) {
-    console.log("🔵 [UpdatePassword] Rendering loading state");
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E3A8A]" />
-      </div>
-    );
-  }
-
-  // Not in recovery mode - show error
-  if (!isRecoveryMode) {
-    console.log("⚠️ [UpdatePassword] Not in recovery mode, showing error");
-    
-    // Check if there was an expired token
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const errorCode = hashParams.get('error_code');
-    const errorDescription = hashParams.get('error_description');
-
+  // Show error if link expired
+  if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="max-w-md w-full">
+        <Card className="max-w-md w-full border-red-200">
           <CardHeader>
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="h-6 w-6 text-red-600" />
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
-            <CardTitle className="text-center">Invalid Reset Link</CardTitle>
-            <CardDescription className="text-center">
-              {errorDescription?.replace(/\+/g, ' ') || "This password reset link is invalid or has expired."}
+            <CardTitle className="text-center text-2xl text-red-700">Link Expired</CardTitle>
+            <CardDescription className="text-center text-base">
+              {error}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Alert variant="destructive">
-              <AlertDescription>
-                Please request a new password reset link.
+            <Alert variant="destructive" className="bg-red-50 border-red-200">
+              <AlertDescription className="text-red-700">
+                Password reset links expire after 1 hour for security reasons.
               </AlertDescription>
             </Alert>
-
-            {/* Debug info - only in development */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs overflow-auto max-h-60">
-                <p className="font-bold mb-2">Debug Info:</p>
-                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-              </div>
-            )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-3">
             <Button 
-              className="w-full" 
+              className="w-full h-11 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" 
               onClick={() => navigate("/forgot-password")}
             >
-              Request New Link
+              Request New Reset Link
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-11 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5"
+              onClick={() => navigate("/login")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Login
             </Button>
           </CardFooter>
         </Card>
@@ -340,12 +170,45 @@ export default function UpdatePassword() {
     );
   }
 
-  console.log("✅ [UpdatePassword] Rendering password update form");
+  // Show success message
+  if (success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="max-w-md w-full border-green-200">
+          <CardHeader>
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
+            <CardTitle className="text-center text-2xl text-green-700">Password Updated!</CardTitle>
+            <CardDescription className="text-center text-base">
+              Your password has been successfully updated.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert className="bg-green-50 border-green-200">
+              <AlertDescription className="text-green-700">
+                Redirecting you to login in 3 seconds...
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full h-11 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" 
+              onClick={() => navigate("/login")}
+            >
+              Go to Login Now
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-gradient-to-br from-[#1E3A8A] via-[#1E3A8A]/95 to-[#C2410C]/80 p-8 relative overflow-hidden">
-        {/* Background pattern */}
+        {/* Animated background blobs */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 -left-4 w-72 h-72 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-blob" />
           <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-2000" />
@@ -475,7 +338,7 @@ export default function UpdatePassword() {
                       />
                     </div>
                     
-                    {/* Requirements */}
+                    {/* Requirements checklist */}
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       <div className="flex items-center gap-1 text-xs">
                         {passwordStrength.length ? 
@@ -563,21 +426,6 @@ export default function UpdatePassword() {
                     </span>
                   </p>
                 </div>
-
-                {/* Debug info - only in development */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs overflow-auto max-h-40">
-                    <p className="font-bold mb-2">Debug Info:</p>
-                    <pre>{JSON.stringify({
-                      isRecoveryMode,
-                      sessionChecked,
-                      passwordLength: password.length,
-                      passwordStrength: Object.values(passwordStrength).filter(Boolean).length,
-                      hash: debugInfo.hash,
-                      hashParams: debugInfo.hashParams
-                    }, null, 2)}</pre>
-                  </div>
-                )}
               </CardContent>
               
               <CardFooter className="flex flex-col gap-4">
@@ -601,6 +449,16 @@ export default function UpdatePassword() {
                       <Lock className="h-4 w-4" />
                     </span>
                   )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 border-[#1E3A8A]/20 hover:bg-[#1E3A8A]/5"
+                  onClick={() => navigate("/login")}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Login
                 </Button>
               </CardFooter>
             </form>

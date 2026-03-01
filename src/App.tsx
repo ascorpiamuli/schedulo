@@ -30,7 +30,7 @@ import Billing from "./pages/Billing";
 import Usage from "./pages/Usage";
 import Integrations from "./pages/Integrations";
 import Security from "./pages/Security";
-import AcceptInvite from "./pages/AcceptInvite"; // Import the accept invite page
+import AcceptInvite from "./pages/AcceptInvite";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import HelpCenter from "./pages/HelpCenter";
@@ -66,7 +66,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -87,6 +87,19 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Special route for update-password - ALWAYS accessible, no redirects
+function UpdatePasswordRoute({ children }: { children: React.ReactNode }) {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Always render the update password page, regardless of auth state
+  // The page itself will handle expired tokens and errors
+  return <>{children}</>;
+}
+
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -101,25 +114,21 @@ const App = () => {
         >
           <AuthProvider>
             <Routes>
-              {/* Public routes - accessible only when NOT logged in */}
+              {/* ============================================
+                  PUBLIC ROUTES - No auth required
+                  ============================================ */}
+              
+              {/* Landing page */}
               <Route path="/" element={
                 <PublicRoute>
                   <Index />
                 </PublicRoute>
               } />
+              
+              {/* Auth routes */}
               <Route path="/login" element={
                 <PublicRoute>
                   <Login />
-                </PublicRoute>
-              } />
-               <Route path="/forgot-password" element={
-                <PublicRoute>
-                  <ForgotPassword />
-                </PublicRoute>
-              } />
-              <Route path="/update-password" element={
-                <PublicRoute>
-                  <UpdatePassword />
                 </PublicRoute>
               } />
               <Route path="/signup" element={
@@ -127,13 +136,28 @@ const App = () => {
                   <Signup />
                 </PublicRoute>
               } />
-
+              <Route path="/forgot-password" element={
+                <PublicRoute>
+                  <ForgotPassword />
+                </PublicRoute>
+              } />
+              
+              {/* Accept Invite Route - Public, but handles auth state internally */}
+              <Route path="/accept-invite/:token" element={<AcceptInvite />} />
+              
+              {/* Public booking page - accessible to anyone */}
               <Route path="/:username/:eventSlug" element={<BookingPage />} />
               
-              {/* Accept Invite Route - Public, no auth required but handles auth state */}
-              <Route path="/accept-invite/:token" element={<AcceptInvite />} />
+              {/* ============================================
+                  SPECIAL ROUTE: UPDATE PASSWORD
+                  ALWAYS accessible, even with active session
+                  ============================================ */}
+              <Route path="/update-password" element={
+                <UpdatePasswordRoute>
+                  <UpdatePassword />
+                </UpdatePasswordRoute>
+              } />
 
-              
               {/* ============================================
                   DASHBOARD ROUTES - Protected, require authentication
                   ============================================ */}
@@ -146,7 +170,6 @@ const App = () => {
               } />
               
               {/* ===== INDIVIDUAL USER ROUTES ===== */}
-              {/* Personal scheduling routes */}
               <Route path="/dashboard/events" element={
                 <ProtectedRoute>
                   <EventTypes />
@@ -164,7 +187,6 @@ const App = () => {
               } />
               
               {/* ===== TEAM MANAGEMENT ROUTES ===== */}
-              {/* Main team overview */}
               <Route path="/dashboard/team" element={
                 <ProtectedRoute>
                   <Teams />
@@ -175,50 +197,36 @@ const App = () => {
                   <TeamCalendar />
                 </ProtectedRoute>
               } />
-              
-              {/* Detailed team management (your current page) */}
               <Route path="/dashboard/team/members" element={
                 <ProtectedRoute>
                   <TeamManagement />
                 </ProtectedRoute>
               } />
-              
-              {/* Department management */}
               <Route path="/dashboard/team/departments" element={
                 <ProtectedRoute>
                   <Departments />
                 </ProtectedRoute>
               } />
-              
-              {/* Team invitations */}
               <Route path="/dashboard/team/invitations" element={
                 <ProtectedRoute>
                   <Invitations />
                 </ProtectedRoute>
               } />
-              
-              {/* Team bookings overview */}
               <Route path="/dashboard/team/bookings" element={
                 <ProtectedRoute>
                   <TeamBookings />
                 </ProtectedRoute>
               } />
-              
-              {/* Team availability calendar */}
               <Route path="/dashboard/team/availability" element={
                 <ProtectedRoute>
                   <TeamAvailability />
                 </ProtectedRoute>
               } />
-              
-              {/* Team event types */}
               <Route path="/dashboard/team/events" element={
                 <ProtectedRoute>
                   <TeamEvents />
                 </ProtectedRoute>
               } />
-              
-              {/* Team analytics */}
               <Route path="/dashboard/team/analytics" element={
                 <ProtectedRoute>
                   <TeamAnalytics />
@@ -226,66 +234,55 @@ const App = () => {
               } />
               
               {/* ===== ORGANIZATION SETTINGS ===== */}
-              {/* Organization-level settings */}
               <Route path="/dashboard/organization" element={
                 <ProtectedRoute>
                   <OrganizationSettings />
                 </ProtectedRoute>
               } />
-              
-              {/* Billing & subscription */}
               <Route path="/dashboard/billing" element={
                 <ProtectedRoute>
                   <Billing />
                 </ProtectedRoute>
               } />
-              
-              {/* Usage & limits */}
               <Route path="/dashboard/usage" element={
                 <ProtectedRoute>
                   <Usage />
                 </ProtectedRoute>
               } />
-              
-              {/* Integrations */}
               <Route path="/dashboard/integrations" element={
                 <ProtectedRoute>
                   <Integrations />
                 </ProtectedRoute>
               } />
-              
-              {/* Security settings */}
               <Route path="/dashboard/security" element={
                 <ProtectedRoute>
                   <Security />
                 </ProtectedRoute>
               } />
-              
-              {/* User settings (profile, preferences) */}
               <Route path="/dashboard/settings" element={
                 <ProtectedRoute>
                   <Settings />
                 </ProtectedRoute>
               } />
-              {/* User settings (profile, preferences) */}
               <Route path="/dashboard/help" element={
                 <ProtectedRoute>
                   <HelpCenter/>
                 </ProtectedRoute>
               } />
-              {/* User settings (profile, preferences) */}
               <Route path="/dashboard/docs" element={
                 <ProtectedRoute>
                   <Documentation />
                 </ProtectedRoute>
               } />
 
+              {/* Catch-all for dashboard 404 */}
               <Route path="/dashboard/*" element={
                 <ProtectedRoute>
                   <NotFound />
                 </ProtectedRoute>
               } />
-              {/* 404 - catch all */}
+              
+              {/* Global 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
