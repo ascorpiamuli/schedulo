@@ -97,6 +97,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useOrganization, useCurrentUserPermissions } from "@/hooks/use-team-management";
+import { MobileBottomNav } from "@/pages/Dashboard";
+import { Chatbot } from "./Chatbot";
 
 // Types for notifications
 interface Notification {
@@ -142,8 +144,8 @@ const navigation = [
   {
     title: "SUPPORT",
     items: [
-      { name: "Help Center", href: "/", icon: HelpCircle },
-      { name: "Documentation", href: "/", icon: BookOpen },
+      { name: "Help Center", href: "/dashboard/help", icon: HelpCircle },
+      { name: "Documentation", href: "/dashboard/docs", icon: BookOpen },
     ]
   }
 ];
@@ -621,12 +623,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard/organization" className="cursor-pointer">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    <span>Organization</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link to="/dashboard/billing" className="cursor-pointer">
                     <CreditCard className="mr-2 h-4 w-4" />
                     <span>Billing</span>
@@ -657,7 +653,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Main content - FULL WIDTH with no padding */}
         <main className="flex-1 overflow-y-auto">
           {children}
+          {/* Mobile Bottom Navigation */}
+          <MobileBottomNav />
         </main>
+        <Chatbot/>
       </div>
     </div>
   );

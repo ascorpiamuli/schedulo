@@ -878,8 +878,7 @@ export default function EventTypes() {
         </motion.div>
       </motion.div>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
+
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

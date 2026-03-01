@@ -47,6 +47,7 @@ import {
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster, toast } from "sonner";
+import { Chatbot } from "@/components/Chatbot";
 
 // Color scheme: Primary Dark Blue (#1E3A8A), Secondary Orange Dark (#C2410C)
 const features = [
@@ -529,7 +530,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-  
+      <Chatbot/>
       
       {/* Header */}
       <motion.header 
@@ -844,14 +845,13 @@ export default function Index() {
               <motion.div 
                 className="flex items-center gap-16 py-4"
                 animate={{ x: [0, -1920] }}
-                transition={{ x: { repeat: Infinity, repeatType: "loop", duration: 40, ease: "linear" } }}
+                transition={{ x: { repeat: Infinity, repeatType: "loop", duration: 30, ease: "linear" } }}
               >
                 {[...partnerLogos, ...partnerLogos, ...partnerLogos].map((logo, index) => (
                   <div key={index} className="flex items-center gap-3 flex-shrink-0">
                     <div className="h-10 w-10 flex items-center justify-center">
                       <img src={logo.logo} alt={logo.name} className="max-h-8 max-w-8 object-contain grayscale hover:grayscale-0 transition-all duration-300" />
                     </div>
-                    <span className="text-sm font-medium text-[#1E3A8A] dark:text-gray-300">{logo.name}</span>
                   </div>
                 ))}
               </motion.div>
@@ -1221,7 +1221,7 @@ export default function Index() {
                     <div>
                       <p className="text-sm font-medium text-[#1E3A8A] dark:text-gray-300">Email</p>
                       <a href="mailto:info@sbpgroup.com" className="text-sm text-gray-600 dark:text-gray-400 hover:text-[#C2410C] transition-colors">
-                        info@sbpgroup.com
+                        info@pasbestventures.com
                       </a>
                     </div>
                   </div>

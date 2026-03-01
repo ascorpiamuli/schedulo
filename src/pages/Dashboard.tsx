@@ -135,9 +135,10 @@ import {
   Chicken,
   Croissant,
   Donut,
-  Popcorn
+  Popcorn,
+  Home
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useBookings } from "@/hooks/use-bookings";
 import { useEventTypes } from "@/hooks/use-event-types";
@@ -583,31 +584,63 @@ const MetricCard = ({ label, value, change, icon: Icon, color = 'blue' }: any) =
   </div>
 );
 
-// Mobile Bottom Navigation
-const MobileBottomNav = () => {
+
+export function MobileBottomNav() {
   const [showMenu, setShowMenu] = useState(false);
-  
+  const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    setShowMenu(false);
+    navigate(path);
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 md:hidden z-50">
       <div className="flex items-center justify-around">
-        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-1 px-2">
-          <Calendar className="h-5 w-5" />
-          <span className="text-xs">Calendar</span>
-        </Button>
-        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-1 px-2">
-          <Clock className="h-5 w-5" />
-          <span className="text-xs">Bookings</span>
-        </Button>
-        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-1 px-2 relative">
-          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-600 text-[10px] text-white flex items-center justify-center">
-            3
-          </div>
-          <Bell className="h-5 w-5" />
-          <span className="text-xs">Alerts</span>
-        </Button>
         <Button 
           variant="ghost" 
           size="sm" 
+          className="flex flex-col items-center gap-1 h-auto py-1 px-2"
+          onClick={() => handleNavigation("/dashboard")}
+        >
+          <Home className="h-5 w-5" />
+          <span className="text-xs">Home</span>
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto py-1 px-2"
+          onClick={() => handleNavigation("/dashboard/events")}
+        >
+          <Zap className="h-5 w-5" />
+          <span className="text-xs">Events</span>
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto py-1 px-2 relative"
+          onClick={() => handleNavigation("/dashboard/bookings")}
+        >
+
+          <Clock className="h-5 w-5" />
+          <span className="text-xs">Bookings</span>
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto py-1 px-2"
+          onClick={() => handleNavigation("/dashboard/team")}
+        >
+          <Users className="h-5 w-5" />
+          <span className="text-xs">Team</span>
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
           className="flex flex-col items-center gap-1 h-auto py-1 px-2"
           onClick={() => setShowMenu(!showMenu)}
         >
@@ -625,29 +658,44 @@ const MobileBottomNav = () => {
             className="absolute bottom-full left-0 right-0 mb-2 bg-background border rounded-lg p-2 mx-2 shadow-lg"
           >
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="ghost" size="sm" className="justify-start gap-2" asChild>
-                <Link to="/dashboard/events">
-                  <Zap className="h-4 w-4" />
-                  Events
-                </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="justify-start gap-2"
+                onClick={() => handleNavigation("/dashboard/availability")}
+              >
+                <Calendar className="h-4 w-4" />
+                Availability
               </Button>
-              <Button variant="ghost" size="sm" className="justify-start gap-2" asChild>
-                <Link to="/dashboard/team">
-                  <Users className="h-4 w-4" />
-                  Team
-                </Link>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="justify-start gap-2"
+                onClick={() => handleNavigation("/dashboard/team/analytics")}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Analytics
               </Button>
-              <Button variant="ghost" size="sm" className="justify-start gap-2" asChild>
-                <Link to="/dashboard/analytics">
-                  <BarChart3 className="h-4 w-4" />
-                  Analytics
-                </Link>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="justify-start gap-2"
+                onClick={() => handleNavigation("/dashboard/settings")}
+              >
+                <Settings2 className="h-4 w-4" />
+                Settings
               </Button>
-              <Button variant="ghost" size="sm" className="justify-start gap-2" asChild>
-                <Link to="/dashboard/settings">
-                  <Settings2 className="h-4 w-4" />
-                  Settings
-                </Link>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="justify-start gap-2"
+                onClick={() => handleNavigation("/dashboard/team/members")}
+              >
+                <Users className="h-4 w-4" />
+                Members
               </Button>
             </div>
           </motion.div>
@@ -655,8 +703,7 @@ const MobileBottomNav = () => {
       </AnimatePresence>
     </div>
   );
-};
-
+}
 export default function Dashboard() {
   const { user } = useAuth();
   const { data: upcoming, isLoading: upcomingLoading } = useBookings("upcoming");
@@ -1304,9 +1351,6 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </motion.div>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
 
       <style jsx>{`
         .hide-scrollbar {

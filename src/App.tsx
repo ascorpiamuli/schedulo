@@ -31,6 +31,10 @@ import Usage from "./pages/Usage";
 import Integrations from "./pages/Integrations";
 import Security from "./pages/Security";
 import AcceptInvite from "./pages/AcceptInvite"; // Import the accept invite page
+import ForgotPassword from "./pages/ForgotPassword";
+import UpdatePassword from "./pages/UpdatePassword";
+import HelpCenter from "./pages/HelpCenter";
+import Documentation from "./pages/Documentation";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -108,18 +112,27 @@ const App = () => {
                   <Login />
                 </PublicRoute>
               } />
+               <Route path="/forgot-password" element={
+                <PublicRoute>
+                  <ForgotPassword />
+                </PublicRoute>
+              } />
+              <Route path="/update-password" element={
+                <PublicRoute>
+                  <UpdatePassword />
+                </PublicRoute>
+              } />
               <Route path="/signup" element={
                 <PublicRoute>
                   <Signup />
                 </PublicRoute>
               } />
-              
-              {/* Public booking pages - accessible to everyone (no auth check) */}
-              <Route path="/:username" element={<BookingPage />} />
+
               <Route path="/:username/:eventSlug" element={<BookingPage />} />
               
               {/* Accept Invite Route - Public, no auth required but handles auth state */}
               <Route path="/accept-invite/:token" element={<AcceptInvite />} />
+
               
               {/* ============================================
                   DASHBOARD ROUTES - Protected, require authentication
@@ -254,7 +267,24 @@ const App = () => {
                   <Settings />
                 </ProtectedRoute>
               } />
-              
+              {/* User settings (profile, preferences) */}
+              <Route path="/dashboard/help" element={
+                <ProtectedRoute>
+                  <HelpCenter/>
+                </ProtectedRoute>
+              } />
+              {/* User settings (profile, preferences) */}
+              <Route path="/dashboard/docs" element={
+                <ProtectedRoute>
+                  <Documentation />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/dashboard/*" element={
+                <ProtectedRoute>
+                  <NotFound />
+                </ProtectedRoute>
+              } />
               {/* 404 - catch all */}
               <Route path="*" element={<NotFound />} />
             </Routes>

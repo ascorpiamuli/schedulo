@@ -744,20 +744,15 @@ function CustomFieldInput({
       );
   }
 }
-
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1E3A8A]/5 via-white to-[#C2410C]/5 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
-      <div className="text-center space-y-6">
-        <div className="relative">
-          <div className="absolute inset-0 bg-[#1E3A8A]/20 rounded-full blur-3xl animate-pulse" />
-          <div className="relative bg-gradient-to-br from-[#1E3A8A] to-[#C2410C] rounded-full p-4 shadow-2xl">
-            <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 animate-spin text-white" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground animate-pulse">Preparing your booking experience...</p>
-          <p className="text-xs text-muted-foreground/60">with {BRAND.name}</p>
+    <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
+      <div className="text-center space-y-3">
+        <span className="text-2xl font-bold">
+          SBP<span className="text-[#C2410C]">Meet</span>
+        </span>
+        <div className="flex justify-center">
+          <div className="w-6 h-6 border-2 border-gray-200 dark:border-gray-800 border-t-[#1E3A8A] rounded-full animate-spin" />
         </div>
       </div>
     </div>

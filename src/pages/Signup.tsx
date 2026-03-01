@@ -317,7 +317,7 @@ export default function Signup() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="text-[#1E3A8A] dark:text-gray-300">
-                    Full name
+                    Full name/ Company Name
                   </Label>
                   <Input
                     id="fullName"
@@ -517,9 +517,9 @@ export default function Signup() {
 
                 <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
                   By signing up, you agree to our{" "}
-                  <a href="/terms" className="hover:text-[#C2410C] transition-colors">Terms</a>{" "}
+                  <a href="https://pasbestventures.com/privacy" className="hover:text-[#C2410C] transition-colors">Terms</a>{" "}
                   and{" "}
-                  <a href="/privacy" className="hover:text-[#C2410C] transition-colors">Privacy Policy</a>
+                  <a href="https://pasbestventures.com/privacy" className="hover:text-[#C2410C] transition-colors">Privacy Policy</a>
                 </p>
               </CardFooter>
             </form>
