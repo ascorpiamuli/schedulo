@@ -28,7 +28,7 @@ export default function UpdatePassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
-  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     uppercase: false,
@@ -36,7 +36,7 @@ export default function UpdatePassword() {
     number: false,
     special: false,
   });
-  const [debugInfo, setDebugInfo] = useState<any>({}); // For logging
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,182 +44,134 @@ export default function UpdatePassword() {
   // Log component mount
   useEffect(() => {
     console.log("🔵 [UpdatePassword] Component mounted");
-    console.log("🔹 URL:", window.location.href);
+    console.log("🔹 Full URL:", window.location.href);
     console.log("🔹 Search params:", window.location.search);
+    console.log("🔹 Hash:", window.location.hash);
     
-    // Log all URL parameters
+    // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const params: Record<string, string> = {};
     urlParams.forEach((value, key) => {
       params[key] = value;
       console.log(`🔹 URL param - ${key}:`, value);
     });
-    setDebugInfo(prev => ({ ...prev, urlParams: params }));
 
-    // Log hash fragment (might contain tokens)
-    if (window.location.hash) {
-      console.log("🔹 URL hash:", window.location.hash);
-      setDebugInfo(prev => ({ ...prev, hash: window.location.hash }));
-    }
+    // Parse hash parameters
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hashParamsObj: Record<string, string> = {};
+    hashParams.forEach((value, key) => {
+      hashParamsObj[key] = value;
+      console.log(`🔹 Hash param - ${key}:`, value);
+    });
+
+    setDebugInfo({
+      urlParams: params,
+      hashParams: hashParamsObj,
+      fullUrl: window.location.href,
+      hash: window.location.hash
+    });
   }, []);
 
-  // Check session on mount
+  // Check session and determine if we're in recovery mode
   useEffect(() => {
     console.log("🔵 [UpdatePassword] Starting session check...");
     
-    const checkSession = async () => {
+    const checkRecoveryMode = async () => {
       try {
-        console.log("🔹 Attempting to get session from Supabase...");
-        const startTime = performance.now();
+        // First, check for errors in the URL hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const errorCode = hashParams.get('error_code');
         
+        if (errorCode === 'otp_expired') {
+          console.log("❌ [UpdatePassword] Expired token detected");
+          setIsRecoveryMode(false);
+          setSessionChecked(true);
+          toast({
+            title: "Link Expired",
+            description: "This password reset link has expired. Please request a new one.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Check for recovery indicators in URL
+        const hasRecoveryInHash = window.location.hash.includes('type=recovery');
+        const hasAccessToken = window.location.hash.includes('access_token');
+        const hasRefreshToken = window.location.hash.includes('refresh_token');
+        
+        console.log("🔹 URL analysis:", {
+          hasRecoveryInHash,
+          hasAccessToken,
+          hasRefreshToken,
+          hash: window.location.hash
+        });
+
+        // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
-        
-        const endTime = performance.now();
-        console.log(`⏱️ [UpdatePassword] getSession took ${(endTime - startTime).toFixed(2)}ms`);
 
         if (error) {
-          console.error("❌ [UpdatePassword] Session error:", {
-            message: error.message,
-            status: error.status,
-            name: error.name
-          });
-          setDebugInfo(prev => ({ ...prev, sessionError: error }));
+          console.error("❌ [UpdatePassword] Session error:", error);
         }
 
         console.log("🔹 Session data:", session ? {
           hasSession: true,
-          userId: session.user?.id,
           email: session.user?.email,
-          expiresAt: session.expires_at ? new Date(session.expires_at).toISOString() : null,
-          isExpired: session.expires_at ? session.expires_at < Date.now() / 1000 : null
-        } : {
-          hasSession: false,
-          message: "No active session found"
-        });
+          aud: session.user?.aud,
+          expiresAt: session.expires_at
+        } : "No session");
 
-        // Log all session properties for debugging
-        if (session) {
-          console.log("🔹 Full session object:", {
-            access_token: session.access_token ? `${session.access_token.substring(0, 20)}...` : null,
-            refresh_token: session.refresh_token ? `${session.refresh_token.substring(0, 20)}...` : null,
-            expires_in: session.expires_in,
-            expires_at: session.expires_at,
-            token_type: session.token_type,
-            user: {
-              id: session.user.id,
-              email: session.user.email,
-              email_confirmed_at: session.user.email_confirmed_at,
-              last_sign_in_at: session.user.last_sign_in_at,
-              created_at: session.user.created_at,
-              updated_at: session.user.updated_at,
-              app_metadata: session.user.app_metadata,
-              user_metadata: session.user.user_metadata,
-              factors: session.user.factors,
-              identities: session.user.identities?.map(i => ({
-                provider: i.provider,
-                id: i.id,
-                created_at: i.created_at,
-                updated_at: i.updated_at
-              }))
-            }
-          });
-          setDebugInfo(prev => ({ ...prev, session }));
-        }
+        // DETERMINE IF WE'RE IN RECOVERY MODE
+        // Multiple conditions to check:
+        const isRecovery = 
+          hasRecoveryInHash || // URL has type=recovery in hash
+          hasAccessToken || // URL has access_token (fresh from email)
+          (session && window.location.hash.length > 0) || // Has session AND hash (from recovery)
+          session?.user?.aud === 'authenticated' && hasRefreshToken; // Authenticated with refresh token
 
-        // Check if this is a password recovery session
-        // In Supabase, recovery sessions are identified by the recovery token or specific flags
-        const isRecoverySession = session?.user?.app_metadata?.provider === 'email' && 
-                                  window.location.hash?.includes('type=recovery');
-
-        console.log("🔹 Is recovery session:", isRecoverySession);
-        
-        if (session) {
-          // Check for recovery flags in various places
-          const hasRecoveryInHash = window.location.hash?.includes('type=recovery');
-          const hasRecoveryInSearch = window.location.search?.includes('type=recovery');
-          const hasRecoveryToken = window.location.hash?.includes('access_token') && 
-                                   window.location.hash?.includes('refresh_token');
+        if (isRecovery) {
+          console.log("✅ [UpdatePassword] RECOVERY MODE DETECTED");
+          setIsRecoveryMode(true);
           
-          console.log("🔹 Recovery indicators:", {
-            hasRecoveryInHash,
-            hasRecoveryInSearch,
-            hasRecoveryToken,
-            appMetadata: session.user?.app_metadata
-          });
-
-          // If there's a session from a password reset link, it's a recovery session
-          if (hasRecoveryInHash || hasRecoveryInSearch || hasRecoveryToken) {
-            console.log("✅ [UpdatePassword] Recovery session detected");
-            setHasRecoverySession(true);
-          } else {
-            // Check if this is a fresh session from a recovery link
-            const isFreshRecovery = session.user?.email_confirmed_at && 
-                                   !session.user?.confirmed_at && 
-                                   window.location.hash?.length > 0;
-            
-            if (isFreshRecovery) {
-              console.log("✅ [UpdatePassword] Fresh recovery session detected");
-              setHasRecoverySession(true);
-            } else {
-              console.log("⚠️ [UpdatePassword] Session exists but not recovery");
-              setHasRecoverySession(false);
-            }
-          }
+          // CRITICAL: Do NOT redirect to dashboard. Stay on this page.
+        } else if (session) {
+          // User is logged in but not from recovery - redirect to dashboard
+          console.log("⚠️ [UpdatePassword] Regular session detected, redirecting to dashboard");
+          navigate('/dashboard');
+          return;
         } else {
-          console.log("❌ [UpdatePassword] No session found");
-          setHasRecoverySession(false);
+          console.log("❌ [UpdatePassword] No recovery session found");
+          setIsRecoveryMode(false);
         }
 
         setSessionChecked(true);
-        console.log("✅ [UpdatePassword] Session check complete");
+        console.log("✅ [UpdatePassword] Session check complete, recovery mode:", isRecovery);
 
       } catch (err) {
-        console.error("❌ [UpdatePassword] Unexpected error during session check:", err);
-        setDebugInfo(prev => ({ ...prev, sessionCheckError: err }));
+        console.error("❌ [UpdatePassword] Unexpected error:", err);
+        setIsRecoveryMode(false);
         setSessionChecked(true);
-        setHasRecoverySession(false);
       }
     };
 
-    checkSession();
+    checkRecoveryMode();
 
     // Listen for auth state changes
     console.log("🔵 [UpdatePassword] Setting up auth state listener...");
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔄 [UpdatePassword] Auth state changed:", {
-        event,
-        hasSession: !!session,
-        sessionUser: session?.user?.email,
-        timestamp: new Date().toISOString()
-      });
-
-      // Log all possible auth events
-      const authEvents = [
-        'SIGNED_IN',
-        'SIGNED_OUT',
-        'TOKEN_REFRESHED',
-        'USER_UPDATED',
-        'PASSWORD_RECOVERY',
-        'INITIAL_SESSION'
-      ];
-      
-      if (authEvents.includes(event)) {
-        console.log(`✅ [UpdatePassword] Auth event: ${event}`);
-      }
+      console.log("🔄 [UpdatePassword] Auth event:", event, session?.user?.email);
 
       if (event === 'PASSWORD_RECOVERY') {
-        console.log("✅ [UpdatePassword] Password recovery event detected");
-        setHasRecoverySession(true);
-      }
-
-      // Log session details on any auth change
-      if (session) {
-        console.log("🔹 Session after auth change:", {
-          userId: session.user.id,
-          email: session.user.email,
-          expiresAt: session.expires_at,
-          provider: session.user.app_metadata?.provider
-        });
+        console.log("✅ [UpdatePassword] PASSWORD_RECOVERY event - recovery mode confirmed");
+        setIsRecoveryMode(true);
+        setSessionChecked(true);
+      } else if (event === 'SIGNED_IN' && window.location.hash.includes('type=recovery')) {
+        console.log("✅ [UpdatePassword] SIGNED_IN from recovery link");
+        setIsRecoveryMode(true);
+        setSessionChecked(true);
+      } else if (event === 'SIGNED_IN' && !isRecoveryMode) {
+        // Regular sign-in, not from recovery
+        console.log("🔹 [UpdatePassword] Regular sign-in detected");
+        // Don't redirect immediately - let the checkRecoveryMode handle it
       }
     });
 
@@ -241,10 +193,9 @@ export default function UpdatePassword() {
     };
     
     console.log("🔹 Password strength:", {
-      passwordLength: password.length,
+      length: password.length,
       ...newStrength,
-      metRequirements: Object.values(newStrength).filter(Boolean).length,
-      timestamp: new Date().toISOString()
+      metRequirements: Object.values(newStrength).filter(Boolean).length
     });
 
     setPasswordStrength(newStrength);
@@ -253,12 +204,6 @@ export default function UpdatePassword() {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("🔵 [UpdatePassword] Update password form submitted");
-    console.log("🔹 Form data:", {
-      passwordLength: password.length,
-      confirmPasswordLength: confirmPassword.length,
-      passwordsMatch: password === confirmPassword,
-      timestamp: new Date().toISOString()
-    });
 
     // Validate passwords match
     if (password !== confirmPassword) {
@@ -274,18 +219,12 @@ export default function UpdatePassword() {
     // Check password strength
     const strengthValues = Object.values(passwordStrength);
     const metCount = strengthValues.filter(Boolean).length;
-    console.log("🔹 Password strength check:", {
-      metRequirements: metCount,
-      required: 3,
-      passed: metCount >= 3,
-      details: passwordStrength
-    });
-
+    
     if (metCount < 3) {
       console.error("❌ [UpdatePassword] Password too weak");
       toast({
         title: "Weak password",
-        description: "Please choose a stronger password",
+        description: "Please choose a stronger password (min 8 chars, mix of letters, numbers & symbols)",
         variant: "destructive",
       });
       return;
@@ -295,24 +234,12 @@ export default function UpdatePassword() {
     console.log("🔵 [UpdatePassword] Attempting to update password...");
 
     try {
-      const startTime = performance.now();
-      console.log("🔹 Calling supabase.auth.updateUser...");
-
       const { error } = await supabase.auth.updateUser({
         password: password,
       });
 
-      const endTime = performance.now();
-      console.log(`⏱️ [UpdatePassword] updateUser took ${(endTime - startTime).toFixed(2)}ms`);
-
       if (error) {
-        console.error("❌ [UpdatePassword] Update failed:", {
-          message: error.message,
-          status: error.status,
-          name: error.name,
-          stack: error.stack
-        });
-
+        console.error("❌ [UpdatePassword] Update failed:", error);
         toast({
           title: "Update failed",
           description: error.message,
@@ -320,34 +247,24 @@ export default function UpdatePassword() {
         });
       } else {
         console.log("✅ [UpdatePassword] Password updated successfully");
-        console.log("🔹 Attempting to sign out user...");
-
+        
         toast({
           title: "Password updated",
-          description: "Your password has been successfully updated",
+          description: "Your password has been successfully updated. Please log in with your new password.",
         });
 
         // Sign out after successful update
-        const signOutStart = performance.now();
         await supabase.auth.signOut();
-        const signOutEnd = performance.now();
-        
-        console.log(`⏱️ [UpdatePassword] signOut took ${(signOutEnd - signOutStart).toFixed(2)}ms`);
-        console.log("✅ [UpdatePassword] User signed out, redirecting to login in 2 seconds");
+        console.log("✅ [UpdatePassword] User signed out");
 
-        // Redirect to login after 2 seconds
+        // Redirect to login after 3 seconds
         setTimeout(() => {
-          console.log("🔵 [UpdatePassword] Redirecting to login page");
+          console.log("🔵 [UpdatePassword] Redirecting to login");
           navigate("/login");
-        }, 2000);
+        }, 3000);
       }
     } catch (error) {
-      console.error("❌ [UpdatePassword] Unexpected error during update:", {
-        error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
-
+      console.error("❌ [UpdatePassword] Unexpected error:", error);
       toast({
         title: "Update failed",
         description: "An unexpected error occurred. Please try again.",
@@ -355,7 +272,6 @@ export default function UpdatePassword() {
       });
     } finally {
       setLoading(false);
-      console.log("🔵 [UpdatePassword] Update process completed");
     }
   };
 
@@ -367,7 +283,7 @@ export default function UpdatePassword() {
 
   // Loading state while checking session
   if (!sessionChecked) {
-    console.log("🔵 [UpdatePassword] Rendering loading state (session not checked)");
+    console.log("🔵 [UpdatePassword] Rendering loading state");
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E3A8A]" />
@@ -375,10 +291,14 @@ export default function UpdatePassword() {
     );
   }
 
-  // No recovery session - show error
-  if (!hasRecoverySession) {
-    console.log("⚠️ [UpdatePassword] Rendering error state (no recovery session)");
-    console.log("🔹 Debug info:", debugInfo);
+  // Not in recovery mode - show error
+  if (!isRecoveryMode) {
+    console.log("⚠️ [UpdatePassword] Not in recovery mode, showing error");
+    
+    // Check if there was an expired token
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const errorCode = hashParams.get('error_code');
+    const errorDescription = hashParams.get('error_description');
 
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -389,7 +309,7 @@ export default function UpdatePassword() {
             </div>
             <CardTitle className="text-center">Invalid Reset Link</CardTitle>
             <CardDescription className="text-center">
-              This password reset link is invalid or has expired.
+              {errorDescription?.replace(/\+/g, ' ') || "This password reset link is invalid or has expired."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -410,10 +330,7 @@ export default function UpdatePassword() {
           <CardFooter>
             <Button 
               className="w-full" 
-              onClick={() => {
-                console.log("🔵 [UpdatePassword] Navigating to forgot-password page");
-                navigate("/forgot-password");
-              }}
+              onClick={() => navigate("/forgot-password")}
             >
               Request New Link
             </Button>
@@ -449,9 +366,9 @@ export default function UpdatePassword() {
             <h1 className="text-4xl font-bold font-['Space_Grotesk']">SBPMeet</h1>
           </div>
           
-          <h2 className="text-3xl font-bold mb-4">Update Your Password</h2>
+          <h2 className="text-3xl font-bold mb-4">Create New Password</h2>
           <p className="text-lg text-white/80 mb-8">
-            Create a strong, unique password to secure your account.
+            Choose a strong password that you don't use on other sites.
           </p>
 
           {/* Security features */}
@@ -460,13 +377,13 @@ export default function UpdatePassword() {
               <div className="bg-green-400/30 p-2 rounded-lg">
                 <Shield className="h-5 w-5" />
               </div>
-              <p className="text-sm text-left">End-to-end encryption</p>
+              <p className="text-sm text-left">256-bit encryption</p>
             </div>
             <div className="flex items-center gap-3 bg-white/10 p-4 rounded-xl backdrop-blur-sm">
               <div className="bg-blue-400/30 p-2 rounded-lg">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
-              <p className="text-sm text-left">2-factor authentication ready</p>
+              <p className="text-sm text-left">Password strength meter</p>
             </div>
           </div>
 
@@ -527,19 +444,14 @@ export default function UpdatePassword() {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => {
-                        console.log("🔹 Password input changed, length:", e.target.value.length);
-                        setPassword(e.target.value);
-                      }}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
                       className="h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] pr-10"
+                      autoFocus
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        console.log("🔹 Toggle password visibility:", !showPassword);
-                        setShowPassword(!showPassword);
-                      }}
+                      onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1E3A8A]"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -625,19 +537,13 @@ export default function UpdatePassword() {
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirmPassword}
-                      onChange={(e) => {
-                        console.log("🔹 Confirm password input changed, length:", e.target.value.length);
-                        setConfirmPassword(e.target.value);
-                      }}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       className="h-11 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-[#1E3A8A]/50 focus:border-[#1E3A8A] pr-10"
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        console.log("🔹 Toggle confirm password visibility:", !showConfirmPassword);
-                        setShowConfirmPassword(!showConfirmPassword);
-                      }}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1E3A8A]"
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -663,12 +569,12 @@ export default function UpdatePassword() {
                   <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs overflow-auto max-h-40">
                     <p className="font-bold mb-2">Debug Info:</p>
                     <pre>{JSON.stringify({
-                      hasRecoverySession,
+                      isRecoveryMode,
                       sessionChecked,
                       passwordLength: password.length,
                       passwordStrength: Object.values(passwordStrength).filter(Boolean).length,
-                      urlParams: debugInfo.urlParams,
-                      hash: debugInfo.hash
+                      hash: debugInfo.hash,
+                      hashParams: debugInfo.hashParams
                     }, null, 2)}</pre>
                   </div>
                 )}
@@ -680,7 +586,6 @@ export default function UpdatePassword() {
                   className="w-full gap-2 h-11 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white shadow-lg shadow-[#1E3A8A]/25" 
                   size="lg" 
                   disabled={loading}
-                  onClick={() => console.log("🔹 Update password button clicked")}
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
